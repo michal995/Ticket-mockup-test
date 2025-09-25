@@ -372,6 +372,112 @@
         font-size: clamp(0.7rem, 1vw, 0.9rem);
       }
     }
+
+
+    /* === OVERRIDE: czysty layout landscape, wszystko mieści się na 1 ekranie === */
+@media (orientation: landscape) {
+  html, body { height: 100dvh; overflow: hidden; }
+
+  main {
+    display: grid;
+    grid-template-columns: 62% 38%;
+    grid-template-rows: 100%;
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+    padding: clamp(8px, 1.8vmin, 14px);
+    gap: clamp(8px, 1.6vmin, 14px);
+    overflow: hidden;
+  }
+
+  .board { 
+    display: grid;
+    grid-template-rows: minmax(0, 22%) minmax(0, 78%);  /* nagłówek + reszta */
+    gap: clamp(8px, 1.6vmin, 14px);
+    min-width: 0; min-height: 0;
+  }
+
+  header {
+    align-items: center;
+    gap: clamp(6px, 1.2vmin, 10px);
+  }
+
+  h1 { 
+    font-size: clamp(14px, 2.4vmin, 22px);
+    line-height: 1.15; margin: 0;
+  }
+  .timer { font-size: clamp(12px, 2.2vmin, 18px); }
+
+  /* PANEL GRY: 3 pasy – opis, akcje (bilety/monety), status */
+  #game.board-layout {
+    display: grid;
+    grid-template-rows: minmax(0, 32%) minmax(0, 48%) minmax(0, 20%);
+    gap: clamp(8px, 1.4vmin, 14px);
+    min-height: 0; overflow: hidden;
+  }
+
+  /* opis (request) – 5 kolumn, drobniejsze fonty */
+  .request {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(6px, 1.2vmin, 10px);
+    font-size: clamp(10px, 1.6vmin, 14px);
+  }
+  .request strong { font-size: clamp(12px, 1.8vmin, 16px); }
+  .highlight { font-size: clamp(14px, 2.2vmin, 18px); }
+
+  /* pas „akcje”: dwie kolumny: LEWO bilety, PRAWO monety */
+  #game.board-layout > .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(8px, 1.4vmin, 14px);
+    min-height: 0;
+  }
+
+  /* BILETY/ MONETY – 2 rzędy, auto-fit w szerokości kontenera (NIE vw) */
+  .tickets, .coins {
+    display: grid;
+    grid-template-rows: 1fr 1fr;        /* zawsze dwie linie, wszystko widać */
+    grid-auto-flow: dense;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: clamp(6px, 1.2vmin, 10px);
+    min-height: 0; min-width: 0;
+  }
+
+  /* przyciski dopasowane do komórki */
+  button {
+    height: 100%;
+    padding: clamp(6px, 1.2vmin, 10px);
+    font-size: clamp(10px, 1.6vmin, 13px);
+    line-height: 1.15;
+  }
+  .ticket-label { font-size: clamp(9px, 1.4vmin, 11px); }
+  .ticket-count { font-size: clamp(11px, 1.8vmin, 14px); }
+
+  /* status (3 kolumny) */
+  .status {
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(6px, 1.2vmin, 10px);
+    font-size: clamp(10px, 1.6vmin, 13px);
+  }
+  .status strong { font-size: clamp(12px, 1.8vmin, 16px); }
+
+  /* boczny panel: przewijana tylko historia */
+  .sidebar {
+    display: grid;
+    grid-template-rows: minmax(0, 32%) minmax(0, 68%);
+    gap: clamp(8px, 1.4vmin, 14px);
+    min-height: 0; overflow: hidden;
+  }
+  .sidebar .history { max-height: 100%; overflow: auto; }
+
+  /* panele nie mają własnego scrolla, żeby nic nie „wychodziło” */
+  .panel { overflow: hidden; }
+}
+
+
+    
+
   </style>
 </head>
 <body>
@@ -709,6 +815,7 @@
         </div>
       `;
     }
+    
 
     // Start gry
     updateHud();
