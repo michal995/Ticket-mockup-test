@@ -27,24 +27,25 @@
       background: radial-gradient(circle at top, rgba(56, 189, 248, 0.25), transparent 55%),
         radial-gradient(circle at bottom, rgba(74, 222, 128, 0.18), transparent 45%), var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: clamp(12px, 3vh, 32px);
+      padding: clamp(10px, 3vh, 28px);
     }
 
     main {
       width: min(1100px, 100%);
-      max-height: 100%;
+      height: 100%;
+      max-height: calc(100dvh - clamp(20px, 6vh, 56px));
       background: color-mix(in srgb, var(--card) 85%, transparent);
       border-radius: 24px;
       border: 1px solid rgba(148, 163, 184, 0.2);
-      padding: clamp(16px, 3vw, 32px);
+      padding: clamp(16px, 3vw, 28px);
       box-shadow: 0 32px 60px rgba(15, 23, 42, 0.45);
       display: grid;
-      grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
-      gap: clamp(16px, 3vw, 28px);
+      grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.95fr);
+      gap: clamp(14px, 2.6vw, 24px);
       align-items: stretch;
       overflow: hidden;
     }
@@ -81,11 +82,38 @@
     .panel {
       background: rgba(15, 23, 42, 0.7);
       border-radius: 18px;
-      padding: clamp(16px, 2.5vw, 24px);
+      padding: clamp(14px, 2.3vw, 22px);
       border: 1px solid rgba(148, 163, 184, 0.14);
       display: grid;
       gap: 16px;
       overflow: auto;
+    }
+
+    #game.board-layout {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: clamp(12px, 2vh, 18px);
+      overflow: hidden;
+    }
+
+    #game.board-layout > .actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: clamp(12px, 2vw, 18px);
+      min-height: 0;
+    }
+
+    #game.board-layout > .actions > .tickets,
+    #game.board-layout > .actions > .coins {
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    #game.board-layout > .actions > .tickets {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    #game.board-layout > .actions > .coins {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     }
 
     .sidebar {
@@ -102,12 +130,18 @@
 
     .request {
       display: grid;
-      gap: 8px;
-      font-size: 1.05rem;
+      gap: 10px;
+      font-size: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+
+    .request > div {
+      display: grid;
+      gap: 4px;
     }
 
     .request strong {
-      font-size: 1.3rem;
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
     }
 
     .tickets,
@@ -116,20 +150,12 @@
       gap: 12px;
     }
 
-    .tickets {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    }
-
-    .coins {
-      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    }
-
     button {
       border: none;
       border-radius: 14px;
-      padding: clamp(10px, 2vh, 14px) clamp(12px, 2vw, 16px);
+      padding: clamp(9px, 2vh, 12px) clamp(10px, 2vw, 16px);
       font-weight: 700;
-      font-size: clamp(0.78rem, 1.8vw, 0.95rem);
+      font-size: clamp(0.78rem, 1.7vw, 0.92rem);
       color: white;
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
@@ -162,22 +188,21 @@
     }
 
     .ticket-count {
-      font-size: 1.4rem;
+      font-size: clamp(1.1rem, 2.4vw, 1.3rem);
     }
 
     .status {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
       align-items: center;
-      justify-content: space-between;
-      font-size: 1rem;
+      font-size: 0.98rem;
     }
 
     .status > div {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .status strong {
@@ -246,28 +271,16 @@
     }
     @media (max-width: 1024px) {
       main {
-        grid-template-columns: 1fr 0.8fr;
+        grid-template-columns: 1fr 0.9fr;
         gap: clamp(12px, 2vw, 20px);
-      }
-
-      .tickets {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      }
-
-      .coins {
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
       }
     }
 
     @media (max-width: 900px) {
-      body {
-        padding: clamp(10px, 2vh, 20px);
-      }
-
       main {
         grid-template-columns: 1fr;
         grid-template-rows: minmax(0, 1fr) auto;
-        max-height: none;
+        max-height: min(720px, 100%);
       }
 
       .sidebar {
@@ -275,31 +288,72 @@
       }
     }
 
-    @media (max-height: 600px) {
+    @media (max-height: 620px) {
       body {
         padding: clamp(8px, 2vh, 16px);
         align-items: stretch;
       }
 
       h1 {
-        font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+        font-size: clamp(1.35rem, 2.2vw, 1.7rem);
       }
 
       .timer {
-        font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+        font-size: clamp(1.1rem, 2.3vw, 1.5rem);
+      }
+
+      .panel {
+        padding: clamp(10px, 2vw, 16px);
+        gap: 12px;
       }
 
       .highlight {
         font-size: clamp(1.3rem, 3vw, 1.8rem);
       }
 
-      .panel {
-        padding: clamp(12px, 2vw, 18px);
+      #game.board-layout {
+        grid-template-rows: auto minmax(0, 1fr) auto;
       }
 
-      main {
-        height: 100%;
-        overflow: auto;
+      #game.board-layout > .actions {
+        grid-template-columns: 1fr;
+        grid-auto-rows: minmax(0, 1fr);
+      }
+
+      #game.board-layout > .actions > .tickets,
+      #game.board-layout > .actions > .coins {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        overflow-y: auto;
+      }
+
+      button {
+        padding: clamp(8px, 1.6vh, 11px) clamp(10px, 2vw, 14px);
+        font-size: clamp(0.72rem, 1.6vw, 0.85rem);
+      }
+
+      .ticket-label {
+        font-size: 0.7rem;
+      }
+
+      .ticket-count {
+        font-size: clamp(1rem, 2.2vw, 1.2rem);
+      }
+
+      .meta {
+        font-size: 0.75rem;
+      }
+
+      .status {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .status > div {
+        justify-content: space-between;
+      }
+
+      .sidebar .history {
+        max-height: 160px;
       }
     }
   </style>
@@ -469,6 +523,7 @@
     }
 
     function renderFeedback(summary) {
+      gamePanel.classList.remove("board-layout");
       gamePanel.innerHTML = `
         <div class="feedback ${summary.success ? "success" : "fail"}">
           ${summary.success ? "🟢" : "🔴"} ${summary.reason}
@@ -481,6 +536,7 @@
 
     function countdownToNext() {
       let remaining = 5;
+      gamePanel.classList.remove("board-layout");
       gamePanel.innerHTML = `<div class="feedback">Kolejny pasażer za ${remaining}…</div>`;
       const interval = setInterval(() => {
         remaining -= 1;
@@ -494,6 +550,7 @@
     }
 
     function showSummary() {
+      gamePanel.classList.remove("board-layout");
       gamePanel.innerHTML = `
         <div class="summary">
           <h2>🎉 Koniec zmiany!</h2>
@@ -571,6 +628,7 @@
     }
 
     function renderBoard() {
+      gamePanel.classList.add("board-layout");
       const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
       const remaining = +(changeDue - state.inserted).toFixed(2);
       const selectedValue = Object.entries(state.selectedTickets).reduce((total, [name, count]) => {
@@ -591,40 +649,42 @@
           <div><span class="meta">Wartość wybranych</span><strong>$${selectedValue.toFixed(2)}</strong></div>
           <div><span class="meta">Twój wybór</span><strong>${ticketStatus || "–"}</strong></div>
         </div>
-        <div class="tickets">
-          ${ticketTypes
-            .map((ticket) => {
-              const count = state.selectedTickets[ticket.name] || 0;
-              const requested = state.request[ticket.name] || 0;
-              const disabled = count >= requested && requested > 0;
-              return `
-                <button
-                  style="background:${ticket.color}"
-                  ${disabled && requested ? "disabled" : ""}
-                  onclick="addTicket('${ticket.name}')"
-                  oncontextmenu="event.preventDefault(); removeTicket('${ticket.name}');"
-                >
-                  <span class="ticket-label">${ticket.name}</span>
-                  <span>${ticket.price.toFixed(2)} $</span>
-                  <span class="ticket-count">${count} / ${requested || 0}</span>
-                  <small class="meta">Lewy klik +1 • Prawy klik -1</small>
-                </button>
-              `;
-            })
-            .join("")}
-        </div>
-        <div class="coins">
-          ${coins
-            .map(
-              (value) => `
-                <button style="background: linear-gradient(135deg, #facc15, #f59e0b)" onclick="insertCoin(${value})">
-                  <span class="ticket-label">Moneta</span>
-                  <span class="ticket-count">$${value.toFixed(2)}</span>
-                  <small class="meta">Reszta: ${state.coinsUsed[value] || 0}</small>
-                </button>
-              `
-            )
-            .join("")}
+        <div class="actions">
+          <div class="tickets">
+            ${ticketTypes
+              .map((ticket) => {
+                const count = state.selectedTickets[ticket.name] || 0;
+                const requested = state.request[ticket.name] || 0;
+                const disabled = count >= requested && requested > 0;
+                return `
+                  <button
+                    style="background:${ticket.color}"
+                    ${disabled && requested ? "disabled" : ""}
+                    onclick="addTicket('${ticket.name}')"
+                    oncontextmenu="event.preventDefault(); removeTicket('${ticket.name}');"
+                  >
+                    <span class="ticket-label">${ticket.name}</span>
+                    <span>${ticket.price.toFixed(2)} $</span>
+                    <span class="ticket-count">${count} / ${requested || 0}</span>
+                    <small class="meta">Lewy klik +1 • Prawy klik -1</small>
+                  </button>
+                `;
+              })
+              .join("")}
+          </div>
+          <div class="coins">
+            ${coins
+              .map(
+                (value) => `
+                  <button style="background: linear-gradient(135deg, #facc15, #f59e0b)" onclick="insertCoin(${value})">
+                    <span class="ticket-label">Moneta</span>
+                    <span class="ticket-count">$${value.toFixed(2)}</span>
+                    <small class="meta">Reszta: ${state.coinsUsed[value] || 0}</small>
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
         </div>
         <div class="status">
           <div><span class="meta">Wydano reszty</span><strong>$${state.inserted.toFixed(2)}</strong></div>
