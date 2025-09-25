@@ -475,12 +475,45 @@
   .panel { overflow: hidden; }
 }
 
+/* === FIT-TO-SCREEN: skalowanie całej gry do ekranu (bez scrolla) === */
+html, body { height: 100dvh; }
+body { overflow: hidden; }
+
+/* Kontener-viewport wypełnia ekran */
+#viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: transparent; /* Twój gradient zostaje w body */
+}
+
+/* "Scena" ma stały rozmiar projektowy (np. 1280x720 ~ 16:9) i skaluje się cała naraz */
+#stage {
+  width: 1280px;           /* logiczna szerokość */
+  height: 720px;           /* logiczna wysokość */
+  transform-origin: top left;
+  transform: scale(var(--fit-scale, 1));
+  will-change: transform;
+}
+
+/* Żeby Twoje dotychczasowe style się stosowały do zawartości: przeniesiemy main do #stage */
+#stage > main {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: hidden;
+}
 
     
 
   </style>
 </head>
 <body>
+  <div id="viewport">
+    <div id="stage">
+  
   <main><!-- Fullscreen scaling container keeping layout within phone viewport -->
     <section class="board">
       <header>
@@ -500,6 +533,8 @@
       </div>
     </aside>
   </main>
+    </div>
+  </div>
 
   <script>
     const ticketTypes = [
@@ -815,7 +850,37 @@
         </div>
       `;
     }
-    
+    // === FIT-TO-SCREEN: skaluje scenę do rozmiaru ekranu (z zachowaniem proporcji) ===
+(function fitToScreen() {
+  const stage = document.getElementById('stage');
+  const viewport = document.getElementById('viewport');
+  const BASE_W = 1280; // jak w CSS
+  const BASE_H = 720;  // jak w CSS
+
+  function fit() {
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const scale = Math.min(vw / BASE_W, vh / BASE_H);
+    stage.style.setProperty('--fit-scale', scale);
+    // wycentrowanie
+    const usedW = BASE_W * scale;
+    const usedH = BASE_H * scale;
+    stage.style.marginLeft = ((vw - usedW) / 2) + 'px';
+    stage.style.marginTop = ((vh - usedH) / 2) + 'px';
+  }
+
+  // iOS Safari potrafi zmieniać "dvh" w trakcie – obserwujemy zmiany
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', () => setTimeout(fit, 50));
+
+  // gdy fonty/obrazy się doczytają
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fit);
+  }
+  new ResizeObserver(fit).observe(viewport);
+  fit();
+})();
+
 
     // Start gry
     updateHud();
