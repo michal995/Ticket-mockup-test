@@ -14,9 +14,9 @@
       --ok:#4ade80; --bad:#f87171; --warn:#facc15;
     }
     *{box-sizing:border-box}
-    html,body{height:100dvh}
+    html{height:100dvh; -webkit-text-size-adjust:100%}
     body{
-      margin:0; overflow:hidden;
+      margin:0; height:100dvh; overflow:hidden; touch-action: manipulation;
       background:
         radial-gradient(circle at 30% -10%, rgba(56,189,248,.25), transparent 55%),
         radial-gradient(circle at 60% 110%, rgba(74,222,128,.18), transparent 45%),
@@ -25,19 +25,19 @@
       font-family: Inter, Segoe UI, system-ui, sans-serif;
       padding: env(safe-area-inset-top) env(safe-area-inset-right)
                env(safe-area-inset-bottom) env(safe-area-inset-left);
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* ==== FIT TO SCREEN (scena dostosowuje się do proporcji urządzenia) ==== */
+    /* ==== FIT TO SCREEN ==== */
     #viewport{position:fixed; inset:0; display:grid; place-items:center}
     #stage{
-      /* szer./wys. są ustawiane dynamicznie w JS, tu tylko fallback */
-      width:1280px; height:720px;
+      width:1280px; height:720px;                /* fallback */
       transform-origin: top left;
       transform: scale(var(--fit,1));
       will-change: transform;
     }
 
-    /* ==== APP FRAME – siatka w scenie ==== */
+    /* ==== APP FRAME ==== */
     .app{
       width:100%; height:100%;
       display:grid; gap:16px; padding:16px;
@@ -55,24 +55,24 @@
     }
     .left{
       display:grid;
-      grid-template-rows: 72px 150px 436px 62px;  /* header | request | actions | status */
+      grid-template-rows: 76px 160px 428px 56px;  /* header | request | actions | status */
       gap:12px;
     }
     .right{display:grid; grid-template-rows: 120px 1fr; gap:12px}
 
     /* header */
     header{display:flex; align-items:center; justify-content:space-between}
-    h1{margin:0; font-size:30px; letter-spacing:.02em}
+    h1{margin:0; font-size:32px; letter-spacing:.02em}
     .timer{color:var(--warn); font-weight:900; font-size:24px}
 
     /* request row (5 kolumn) */
-    .meta{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.1em}
+    .meta{color:var(--muted); font-size:16px; text-transform:uppercase; letter-spacing:.09em}
     .val{font-size:18px; font-weight:700}
     .val-big{font-size:28px; font-weight:900}
     .request{
       display:grid; align-content:start;
       grid-template-columns: repeat(5, 1fr);
-      column-gap:12px; row-gap:6px;
+      column-gap:12px; row-gap:8px;
     }
 
     /* actions: 2 kolumny (bilety | monety) */
@@ -84,10 +84,11 @@
     .btn{
       border:0; border-radius:14px; color:#fff;
       cursor:pointer; display:grid; place-items:center; text-align:center;
-      height:100%; padding:8px 10px; line-height:1.1;
-      font-weight:800; font-size:18px;   /* CZYTELNE */
+      height:100%; padding:10px; line-height:1.12;
+      font-weight:800; font-size:20px;          /* >=16px => iOS nie zoomuje */
+      touch-action: manipulation;
     }
-    .btn small{font-weight:700; font-size:13px; opacity:.9}
+    .btn small{font-weight:700; font-size:16px; opacity:.9}
     .btn:disabled{opacity:.5; cursor:not-allowed}
 
     /* kolorystyka kafelków */
@@ -101,10 +102,10 @@
     .t-tourist{background:linear-gradient(135deg,#f87171,#dc2626)}
     .coin{background:linear-gradient(135deg,#facc15,#f59e0b); color:#1f2937}
 
-    /* status */
+    /* status & right */
     .status{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; align-items:center}
-    .history{margin:0; padding:0; list-style:none; display:grid; gap:8px; overflow:auto; height:100%}
-    .tag{display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(148,163,184,.18); font-size:12px}
+    .history{margin:0; padding:0; list-style:none; display:grid; gap:10px; overflow:auto; height:100%}
+    .tag{display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(148,163,184,.18); font-size:14px}
     .score{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center}
     .big{font-size:28px; font-weight:900; text-align:right}
   </style>
@@ -156,34 +157,40 @@
   </div>
 
   <script>
-    /* ==== FIT-TO-SCREEN: dopasowanie sceny do prawdziwych rozmiarów (bez marginów) ==== */
+    /* ==== iOS: zbijamy double-tap/pinch zoom, żeby widok się nie rozjeżdżał ==== */
+    (function preventIOSZoom(){
+      let last = 0;
+      document.addEventListener('touchend', function(e){
+        const now = Date.now();
+        if (now - last < 350) { e.preventDefault(); }
+        last = now;
+      }, { passive:false });
+      document.addEventListener('gesturestart', e=>e.preventDefault(), { passive:false });
+    })();
+
+    /* ==== FIT-TO-SCREEN: scena = pełny ekran w landscape, bez marginesów ==== */
     (function() {
       const stage = document.getElementById('stage');
       const viewport = document.getElementById('viewport');
 
-      // Bazowa wysokość sceny – stała; szerokość będzie liczona z proporcji ekranu
-      const BASE_H = 720;      // „wysokość projektu”
-      const MIN_W  = 1280;     // min. szerokość (16:9)
-      const MAX_W  = 1800;     // górny limit dla bardzo szerokich ekranów
+      // bazowa wysokość sceny – stała (ułatwia czytelność), szerokość liczymy z proporcji ekranu
+      const BASE_H = 720;
 
       function fit(){
         const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
         const vw = vv.width;
         const vh = vv.height;
+        const ratio = vw / vh;
 
-        // Cel: wypełnić ekran w landscape — dynamicznie ustawiamy bazową szerokość
-        const ratio = vw / vh;                          // np. iPhone ~2.16
-        let baseW = Math.max(MIN_W, Math.min(MAX_W, Math.round(BASE_H * ratio)));
+        // dynamiczna szerokość: dokładnie BASE_H * (szer/wys urządzenia)
+        const baseW = Math.round(BASE_H * ratio);
 
-        // Przypisz dynamiczne wymiary sceny
         stage.style.width  = baseW + 'px';
         stage.style.height = BASE_H + 'px';
 
-        // Skala tak, aby scena MIEŚCIŁA się w ekranie (bez przewijania)
         const scale = Math.min(vw / baseW, vh / BASE_H);
         stage.style.setProperty('--fit', scale);
 
-        // Wycentrowanie
         const usedW = baseW * scale;
         const usedH = BASE_H * scale;
         stage.style.marginLeft = ((vw - usedW) / 2) + 'px';
@@ -197,7 +204,7 @@
       fit();
     })();
 
-    /* ==== LOGIKA GRY (uproszczona wizualnie, ta sama mechanika) ==== */
+    /* ==== LOGIKA GRY ==== */
     const ticketTypes = [
       { name:"Normal", price:1.2, cls:"t-normal" },
       { name:"Kid", price:0.5, cls:"t-kid" },
@@ -255,7 +262,7 @@
     }
     function uniqCoins(){return Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;}
 
-    // Render actions (2x4; DUŻE, czytelne)
+    // Render actions (2x4)
     function renderActions(){
       ticketsWrap.innerHTML = ticketTypes.map(t=>{
         const count=state.selectedTickets[t.name]||0;
@@ -272,7 +279,7 @@
       coinsWrap.innerHTML = coins.map(v=>`
         <button class="btn coin" onclick="insertCoin(${v})">
           <div>$${v.toFixed(2)}</div>
-          <small>×${state.coinsUsed[v]||0}</small>
+          <small>×${(state.coinsUsed[v]||0)}</small>
         </button>
       `).join("");
     }
@@ -332,8 +339,8 @@
       state.history.unshift({round:currentRound, success:ok, reason: reason || (ok?"Sprzedaż poprawna":"Błąd"), bonuses});
       state.history=state.history.slice(0,6);
       updateHud();
-      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,1000);
-      else setTimeout(()=>startRound(),1000);
+      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,900);
+      else setTimeout(()=>startRound(),900);
     }
     function showSummary(){
       state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]});
