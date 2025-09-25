@@ -41,4 +41,333 @@
     .app{
       width:100%; height:100%;
       display:grid; gap:16px; padding:16px;
-      grid-template-columns: 900px 360px;        /* lewa (gra) | prawa (*
+      grid-template-columns: 900px 360px;        /* lewa (gra) | prawa (wynik) */
+      background:rgba(30,41,59,.88);
+      border:1px solid rgba(148,163,184,.25);
+      border-radius:20px;
+      box-shadow:0 32px 60px rgba(15,23,42,.45);
+    }
+    .panel{
+      background:rgba(15,23,42,.74);
+      border:1px solid rgba(148,163,184,.14);
+      border-radius:16px;
+      padding:14px;
+    }
+    .left{
+      display:grid;
+      grid-template-rows: 72px 150px 436px 62px;  /* header | request | actions | status */
+      gap:12px;
+    }
+    .right{display:grid; grid-template-rows: 120px 1fr; gap:12px}
+
+    /* header */
+    header{display:flex; align-items:center; justify-content:space-between}
+    h1{margin:0; font-size:30px; letter-spacing:.02em}
+    .timer{color:var(--warn); font-weight:900; font-size:24px}
+
+    /* request row (5 kolumn) */
+    .meta{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.1em}
+    .val{font-size:18px; font-weight:700}
+    .val-big{font-size:28px; font-weight:900}
+    .request{
+      display:grid; align-content:start;
+      grid-template-columns: repeat(5, 1fr);
+      column-gap:12px; row-gap:6px;
+    }
+
+    /* actions: 2 kolumny (bilety | monety) */
+    .actions{display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%}
+    .tickets,.coins{
+      display:grid; gap:12px; height:100%;
+      grid-template-rows: 1fr 1fr; grid-template-columns: repeat(4, 1fr);
+    }
+    .btn{
+      border:0; border-radius:14px; color:#fff;
+      cursor:pointer; display:grid; place-items:center; text-align:center;
+      height:100%; padding:8px 10px; line-height:1.1;
+      font-weight:800; font-size:18px;   /* CZYTELNE */
+    }
+    .btn small{font-weight:700; font-size:13px; opacity:.9}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+
+    /* kolorystyka kafelków */
+    .t-normal{background:linear-gradient(135deg,#4ade80,#16a34a)}
+    .t-kid{background:linear-gradient(135deg,#38bdf8,#2563eb)}
+    .t-luggage{background:linear-gradient(135deg,#f97316,#c2410c)}
+    .t-senior{background:linear-gradient(135deg,#a855f7,#7c3aed)}
+    .t-disabled{background:linear-gradient(135deg,#ec4899,#db2777)}
+    .t-stroller{background:linear-gradient(135deg,#14b8a6,#0f766e)}
+    .t-bike{background:linear-gradient(135deg,#84cc16,#4d7c0f)}
+    .t-tourist{background:linear-gradient(135deg,#f87171,#dc2626)}
+    .coin{background:linear-gradient(135deg,#facc15,#f59e0b); color:#1f2937}
+
+    /* status */
+    .status{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; align-items:center}
+    .history{margin:0; padding:0; list-style:none; display:grid; gap:8px; overflow:auto; height:100%}
+    .tag{display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(148,163,184,.18); font-size:12px}
+    .score{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center}
+    .big{font-size:28px; font-weight:900; text-align:right}
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="stage">
+      <div class="app">
+        <!-- LEWA: gra -->
+        <section class="left">
+          <header class="panel">
+            <h1>🚌 Ticket Rush</h1>
+            <div class="timer" id="timer">20 s</div>
+          </header>
+
+          <section class="panel request">
+            <div><div class="meta">Pasażer potrzebuje</div><div class="val" id="need">—</div></div>
+            <div><div class="meta">Do zapłaty</div><div class="val-big" id="pays">$0.00</div></div>
+            <div><div class="meta">Wartość biletów</div><div class="val" id="fare">$0.00</div></div>
+            <div><div class="meta">Wartość wybranych</div><div class="val" id="picked">$0.00</div></div>
+            <div><div class="meta">Twój wybór</div><div class="val" id="choice">—</div></div>
+          </section>
+
+          <section class="panel actions">
+            <div class="tickets" id="tickets"></div>
+            <div class="coins" id="coins"></div>
+          </section>
+
+          <section class="panel status">
+            <div><div class="meta">Wydano reszty</div><div class="val" id="inserted">$0.00</div></div>
+            <div><div class="meta">Do wydania</div><div class="val" id="remain">$0.00</div></div>
+            <div><div class="meta">Zmiennych nominałów</div><div class="val" id="mix">0</div></div>
+          </section>
+        </section>
+
+        <!-- PRAWA: wynik + historia -->
+        <aside class="right">
+          <section class="panel score">
+            <div><div class="meta">Punkty</div><div class="big" id="score">0</div></div>
+            <div><div class="meta">Sprzedaże</div><div class="big" id="round">0 / 5</div></div>
+          </section>
+          <section class="panel">
+            <div class="meta" style="margin-bottom:8px">Historia</div>
+            <ul class="history" id="history"></ul>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==== FIT-TO-SCREEN: dopasowanie sceny do prawdziwych rozmiarów (bez marginów) ==== */
+    (function() {
+      const stage = document.getElementById('stage');
+      const viewport = document.getElementById('viewport');
+
+      // Bazowa wysokość sceny – stała; szerokość będzie liczona z proporcji ekranu
+      const BASE_H = 720;      // „wysokość projektu”
+      const MIN_W  = 1280;     // min. szerokość (16:9)
+      const MAX_W  = 1800;     // górny limit dla bardzo szerokich ekranów
+
+      function fit(){
+        const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
+        const vw = vv.width;
+        const vh = vv.height;
+
+        // Cel: wypełnić ekran w landscape — dynamicznie ustawiamy bazową szerokość
+        const ratio = vw / vh;                          // np. iPhone ~2.16
+        let baseW = Math.max(MIN_W, Math.min(MAX_W, Math.round(BASE_H * ratio)));
+
+        // Przypisz dynamiczne wymiary sceny
+        stage.style.width  = baseW + 'px';
+        stage.style.height = BASE_H + 'px';
+
+        // Skala tak, aby scena MIEŚCIŁA się w ekranie (bez przewijania)
+        const scale = Math.min(vw / baseW, vh / BASE_H);
+        stage.style.setProperty('--fit', scale);
+
+        // Wycentrowanie
+        const usedW = baseW * scale;
+        const usedH = BASE_H * scale;
+        stage.style.marginLeft = ((vw - usedW) / 2) + 'px';
+        stage.style.marginTop  = ((vh - usedH) / 2) + 'px';
+      }
+
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', ()=>setTimeout(fit,50));
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+      new ResizeObserver(fit).observe(viewport);
+      fit();
+    })();
+
+    /* ==== LOGIKA GRY (uproszczona wizualnie, ta sama mechanika) ==== */
+    const ticketTypes = [
+      { name:"Normal", price:1.2, cls:"t-normal" },
+      { name:"Kid", price:0.5, cls:"t-kid" },
+      { name:"Luggage", price:0.6, cls:"t-luggage" },
+      { name:"Senior", price:0.8, cls:"t-senior" },
+      { name:"Disabled", price:0.6, cls:"t-disabled" },
+      { name:"Baby Stroller", price:0.7, cls:"t-stroller" },
+      { name:"Bike", price:0.9, cls:"t-bike" },
+      { name:"Tourist", price:1.5, cls:"t-tourist" }
+    ];
+    const coins=[5,2,1,0.5,0.25,0.1,0.05,0.01];
+
+    // UI refs
+    const timerDisplay=document.getElementById("timer");
+    const scoreDisplay=document.getElementById("score");
+    const roundDisplay=document.getElementById("round");
+    const historyList=document.getElementById("history");
+    const needEl=document.getElementById("need");
+    const paysEl=document.getElementById("pays");
+    const fareEl=document.getElementById("fare");
+    const pickedEl=document.getElementById("picked");
+    const choiceEl=document.getElementById("choice");
+    const insertedEl=document.getElementById("inserted");
+    const remainEl=document.getElementById("remain");
+    const mixEl=document.getElementById("mix");
+    const ticketsWrap=document.getElementById("tickets");
+    const coinsWrap=document.getElementById("coins");
+
+    // State
+    const TOTAL_ROUNDS=5;
+    let currentRound=0, score=0, timerId=null;
+    const state={
+      request:{}, ticketTotal:0, pays:0,
+      selectedTickets:{}, coinsUsed:{}, inserted:0,
+      timeLeft:20, history:[]
+    };
+
+    // Helpers
+    function rndReq(){
+      const res={}; const uniq=Math.floor(Math.random()*2)+1;
+      const pool=[...ticketTypes];
+      for(let i=0;i<uniq;i++){
+        const pickIndex=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
+        const [t]=pool.splice(pickIndex,1);
+        const cnt=Math.floor(Math.random()*3)+1;
+        res[t.name]=cnt;
+      }
+      return res;
+    }
+    function calcFare(req){
+      return Object.entries(req).reduce((sum,[n,c])=>{
+        const t=ticketTypes.find(x=>x.name===n);
+        return sum + t.price*c;
+      },0);
+    }
+    function uniqCoins(){return Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;}
+
+    // Render actions (2x4; DUŻE, czytelne)
+    function renderActions(){
+      ticketsWrap.innerHTML = ticketTypes.map(t=>{
+        const count=state.selectedTickets[t.name]||0;
+        const need=state.request[t.name]||0;
+        const disabled = need>0 && count>=need;
+        return `<button class="btn ${t.cls}" ${disabled?'disabled':''}
+                  onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
+                  <div>${t.name}</div>
+                  <div>$${t.price.toFixed(2)}</div>
+                  <small>${count} / ${need||0}</small>
+                </button>`;
+      }).join("");
+
+      coinsWrap.innerHTML = coins.map(v=>`
+        <button class="btn coin" onclick="insertCoin(${v})">
+          <div>$${v.toFixed(2)}</div>
+          <small>×${state.coinsUsed[v]||0}</small>
+        </button>
+      `).join("");
+    }
+
+    // HUD
+    function updateHud(){
+      scoreDisplay.textContent=score;
+      roundDisplay.textContent=`${Math.min(currentRound,TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+      historyList.innerHTML=state.history.map(
+        ({round:r,success,reason,bonuses})=>`<li><strong>Runda ${r}:</strong> ${success?'✅':'❌'} ${reason}
+          ${bonuses.length?`<div>${bonuses.map(b=>`<span class="tag">${b}</span>`).join(" ")}</div>`:''}</li>`
+      ).join("");
+
+      needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+      paysEl.textContent = `$${state.pays.toFixed(2)}`;
+      fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
+      const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
+        const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0);
+      },0);
+      pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
+      choiceEl.textContent = Object.entries(state.selectedTickets).map(([n,c])=>`${c}× ${n}`).join(", ") || "—";
+      insertedEl.textContent = `$${state.inserted.toFixed(2)}`;
+      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
+      const remaining = +(changeDue - state.inserted).toFixed(2);
+      remainEl.textContent = `$${Math.max(remaining,0).toFixed(2)}`;
+      mixEl.textContent = uniqCoins();
+    }
+
+    // Flow
+    function startRound(){
+      currentRound+=1;
+      if(currentRound> TOTAL_ROUNDS){showSummary(); return;}
+      Object.assign(state,{
+        request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0,
+        timeLeft:20
+      });
+      state.ticketTotal=+calcFare(state.request).toFixed(2);
+      const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
+      state.pays=+(state.ticketTotal+extra).toFixed(2);
+      renderActions(); updateHud(); startTimer();
+    }
+    function startTimer(){
+      stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
+      timerId=setInterval(()=>{
+        state.timeLeft-=1;
+        if(state.timeLeft<=0){timerDisplay.textContent=`0 s`; stopTimer(); finish(false,{reason:"Upłynął czas"}); return;}
+        timerDisplay.textContent=`${state.timeLeft} s`;
+      },1000);
+    }
+    function stopTimer(){ if(timerId!==null){clearInterval(timerId); timerId=null;} }
+    function finish(ok,{reason="",bonuses=[]}={}){
+      stopTimer();
+      const timeBonus = state.timeLeft>5 ? "⏱️ Premia za czas" : null;
+      const mixBonus = uniqCoins()<3 && state.inserted>0 ? "🎯 Premia za resztę" : null;
+      if(timeBonus)bonuses.push(timeBonus); if(mixBonus)bonuses.push(mixBonus);
+      score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
+      state.history.unshift({round:currentRound, success:ok, reason: reason || (ok?"Sprzedaż poprawna":"Błąd"), bonuses});
+      state.history=state.history.slice(0,6);
+      updateHud();
+      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,1000);
+      else setTimeout(()=>startRound(),1000);
+    }
+    function showSummary(){
+      state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]});
+      updateHud();
+    }
+
+    // Actions
+    window.addTicket=function(name){
+      const req=state.request[name]||0; const cur=state.selectedTickets[name]||0;
+      if(cur>=req && req>0) return;
+      state.selectedTickets[name]=(cur+1); updateHud(); checkAutoFinish();
+    }
+    window.removeTicket=function(name){
+      const cur=state.selectedTickets[name]||0; if(cur<=0) return;
+      state.selectedTickets[name]=cur-1; if(state.selectedTickets[name]<=0) delete state.selectedTickets[name];
+      updateHud(); checkAutoFinish();
+    }
+    window.insertCoin=function(v){
+      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
+      const next=+(state.inserted+v).toFixed(2);
+      if(next - changeDue > 0.001){ finish(false,{reason:"Wydano za dużo reszty"}); return; }
+      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1;
+      updateHud(); checkAutoFinish();
+    }
+    function checkAutoFinish(){
+      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
+      const goodMoney=Math.abs(state.inserted - changeDue)<=0.001;
+      const goodTickets=Object.entries(state.request).every(([n,c])=> (state.selectedTickets[n]||0)===c)
+                          && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
+      if(goodMoney && goodTickets) finish(true,{reason:"Sprzedaż poprawna"});
+    }
+
+    // Start
+    updateHud(); startRound();
+  </script>
+</body>
+</html>
