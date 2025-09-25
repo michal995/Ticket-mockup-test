@@ -86,7 +86,7 @@
       border: 1px solid rgba(148, 163, 184, 0.14);
       display: grid;
       gap: 16px;
-      overflow: auto;
+      overflow: hidden;
     }
 
     #game.board-layout {
@@ -323,7 +323,6 @@
       #game.board-layout > .actions > .tickets,
       #game.board-layout > .actions > .coins {
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        overflow-y: auto;
       }
 
       button {
@@ -354,6 +353,113 @@
 
       .sidebar .history {
         max-height: 160px;
+      }
+    }
+
+    @media (max-height: 520px) {
+      body {
+        padding: clamp(6px, 1.4vh, 12px);
+      }
+
+      main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        height: calc(100dvh - clamp(12px, 2.8vh, 24px));
+        max-height: calc(100dvh - clamp(12px, 2.8vh, 24px));
+      }
+
+      .board {
+        min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      header {
+        gap: 8px;
+      }
+
+      h1 {
+        font-size: clamp(1.25rem, 2.1vw, 1.6rem);
+      }
+
+      .timer {
+        font-size: clamp(1rem, 2.1vw, 1.4rem);
+      }
+
+      .panel {
+        border-radius: 16px;
+        padding: clamp(10px, 1.8vw, 14px);
+        gap: 10px;
+      }
+
+      .sidebar {
+        grid-row: 1;
+        grid-column: 1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sidebar .status {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .sidebar .history {
+        grid-column: 1 / -1;
+        max-height: 90px;
+      }
+
+      #game.board-layout {
+        grid-template-rows: auto minmax(0, 1fr) minmax(48px, auto);
+      }
+
+      #game.board-layout > .request {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      #game.board-layout > .actions {
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+        grid-auto-rows: minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      #game.board-layout > .actions > .tickets {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: minmax(44px, 1fr);
+        gap: 8px;
+      }
+
+      #game.board-layout > .actions > .coins {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-auto-rows: minmax(44px, 1fr);
+        gap: 8px;
+      }
+
+      button {
+        padding: 8px 10px;
+        gap: 4px;
+        font-size: clamp(0.64rem, 1.5vw, 0.76rem);
+      }
+
+      .ticket-label {
+        font-size: 0.64rem;
+      }
+
+      .ticket-count {
+        font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+      }
+
+      .history {
+        font-size: clamp(0.72rem, 1.5vw, 0.85rem);
+      }
+
+      .highlight {
+        font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+      }
+
+      .feedback {
+        padding: 20px 8px;
       }
     }
   </style>
