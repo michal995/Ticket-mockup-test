@@ -2,221 +2,141 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-        content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
   <title>Ticket Rush — Bus Simulator PRO</title>
   <style>
-    /* ======= Design tokens (8pt scale) ======= */
+    /* ===== Apple-like tokens (material + iOS system colors) ===== */
     :root{
       color-scheme: dark;
-      /* Colors */
-      --bg: #0b1222;
-      --panel: rgba(17, 25, 40, 0.6);          /* frosted */
-      --panel-border: rgba(148,163,184,0.18);
-      --text: #f7fafc;
-      --muted: #9fb1c9;
-      --accent: #7dd3fc;
-      --warn: #facc15;
-      --ok: #34d399;
-      --bad: #fb7185;
-      /* Radii & shadows */
-      --r-xl: 24px; --r-lg: 20px; --r-md: 16px; --r-sm: 12px;
-      --shadow-1: 0 8px 24px rgba(0,0,0,.25);
-      --shadow-2: 0 24px 48px rgba(2,6,23,.45);
-      /* Spacing */
-      --space-1: 8px; --space-2: 12px; --space-3: 16px; --space-4: 20px; --space-5: 24px;
-      --space-6: 32px;
+      /* Background gradient like iOS glassy wallpapers */
+      --bg0:#0a0f1a; --bg1:#0d1526;
+      --panel: rgba(18, 24, 38, .60);
+      --panel-border: rgba(200,210,225,.15);
+      --text:#f2f5f8; --muted:#a8b3c7;
+      --warn:#ffd60a;
+
+      /* iOS system colors */
+      --sys-blue-1:#0a84ff; --sys-blue-2:#66aaff;
+      --sys-green-1:#30d158; --sys-green-2:#0fb34a;
+      --sys-orange-1:#ff9f0a; --sys-orange-2:#e07b00;
+      --sys-purple-1:#bf5af2; --sys-purple-2:#8a2be2;
+      --sys-pink-1:#ff375f; --sys-pink-2:#d81b60;
+      --sys-teal-1:#64d2ff; --sys-teal-2:#22b8ff;
+      --sys-mint-1:#00c7be; --sys-mint-2:#00a59c;
+      --sys-red-1:#ff453a; --sys-red-2:#d62d20;
+      --sys-yellow-1:#ffd60a; --sys-yellow-2:#f5b700;
+
+      --r-xl:24px; --r-lg:18px; --r-md:14px; --r-sm:10px;
+      --space-2:12px; --space-3:16px; --space-4:20px; --space-5:24px;
+      --shadow: 0 18px 48px rgba(0,0,0,.42);
     }
 
-    * { box-sizing: border-box; }
-
-    html { height: 100dvh; -webkit-text-size-adjust: 100%; }
-    body {
-      margin: 0;
-      height: 100dvh;
-      overflow: hidden;
-      touch-action: manipulation;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Segoe UI, Inter, system-ui, sans-serif;
-      color: var(--text);
+    *{box-sizing:border-box}
+    html{height:100dvh; -webkit-text-size-adjust:100%}
+    body{
+      margin:0; height:100dvh; overflow:hidden; touch-action:manipulation;
+      font-family:-apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+      color:var(--text);
       background:
-        radial-gradient(1200px 600px at 10% -10%, rgba(125,211,252,.28), transparent 55%),
-        radial-gradient(900px 540px at 90% 110%, rgba(52,211,153,.18), transparent 45%),
-        var(--bg);
-      padding: env(safe-area-inset-top) env(safe-area-inset-right)
-               env(safe-area-inset-bottom) env(safe-area-inset-left);
-      -webkit-tap-highlight-color: transparent;
+        radial-gradient(1400px 800px at 15% -10%, rgba(10,132,255,.18), transparent 60%),
+        radial-gradient(1200px 680px at 85% 110%, rgba(48,209,88,.14), transparent 50%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      -webkit-tap-highlight-color:transparent;
     }
 
-    /* ======= Fit-to-screen stage (centred) ======= */
-    #viewport { position: fixed; inset: 0; display: grid; place-items: center; }
-    #stage {
-      /* dynamic size set in JS; fallback below */
-      width: 1280px; height: 720px;
-      transform: scale(var(--fit, 1));
-      transform-origin: center center; /* wizualne wyśrodkowanie */
-      filter: drop-shadow(var(--shadow-2));
+    /* ===== Stage: perfectly centered + scaled ===== */
+    #viewport{position:fixed; inset:0; overflow:hidden}
+    #stage{
+      position:absolute; top:50%; left:50%;
+      width:1280px; height:720px;                /* fallback */
+      transform:translate(-50%,-50%) scale(var(--fit,1));
+      transform-origin:center center;
+      filter:drop-shadow(var(--shadow));
     }
 
-    /* ======= App frame / layout ======= */
-    .app {
-      width: 100%; height: 100%;
-      display: grid; gap: var(--space-3); padding: var(--space-3);
-      grid-template-columns: 860fr 380fr; /* lewa (gra) | prawa (HUD) */
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border: 1px solid var(--panel-border);
-      border-radius: var(--r-xl);
-      backdrop-filter: blur(14px) saturate(115%);
+    /* ===== App frame ===== */
+    .app{
+      width:100%; height:100%;
+      display:grid; gap:var(--space-3); padding:var(--space-3);
+      grid-template-columns: 860fr 380fr;
+      border-radius:var(--r-xl);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--panel-border);
+      backdrop-filter: blur(14px) saturate(120%);
     }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: var(--r-lg);
-      padding: var(--space-4);
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius:var(--r-lg);
+      padding:var(--space-4);
       backdrop-filter: blur(14px) saturate(120%);
     }
 
-    /* Lewa kolumna = gra */
-    .left {
-      display: grid;
-      grid-template-rows: 72px 152px 1fr 68px; /* header | request | actions | status */
-      gap: var(--space-3);
-    }
+    .left{display:grid; grid-template-rows:72px 152px 1fr 68px; gap:var(--space-3)}
+    .right{display:grid; grid-template-rows:128px 1fr; gap:var(--space-3)}
 
-    /* Prawa kolumna = wynik + historia */
-    .right {
-      display: grid; grid-template-rows: 128px 1fr; gap: var(--space-3);
-    }
+    /* Header */
+    header{display:flex; align-items:center; justify-content:space-between}
+    h1{margin:0; font-weight:800; font-size:28px; letter-spacing:.02em; display:flex; gap:10px}
+    .timer{font-weight:900; font-size:20px; color:#1b1b1b; background:var(--warn); padding:6px 12px; border-radius:999px}
 
-    /* ======= Header ======= */
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      border-radius: var(--r-lg);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      box-shadow: var(--shadow-1) inset;
-    }
-    h1 {
-      margin: 0;
-      font-weight: 800;
-      font-size: 28px;
-      letter-spacing: .02em;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .timer {
-      font-weight: 900;
-      font-size: 22px;
-      color: var(--warn);
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(250,204,21,.12);
-      border: 1px solid rgba(250,204,21,.25);
-    }
+    /* Stat cards row */
+    .request{display:grid; grid-template-columns:repeat(5,1fr); gap:var(--space-3)}
+    .stat{background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+          border:1px solid var(--panel-border); border-radius:var(--r-md); padding:var(--space-3); display:grid; gap:6px}
+    .label{color:var(--muted); font-size:14px; letter-spacing:.08em; text-transform:uppercase}
+    .value{font-size:18px; font-weight:700}
+    .value.big{font-size:26px; font-weight:900}
 
-    /* ======= Request (karty statusu) ======= */
-    .request {
-      display: grid; align-content: start;
-      grid-template-columns: repeat(5, 1fr);
-      gap: var(--space-3);
+    /* Actions */
+    .actions{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3)}
+    .grid{display:grid; gap:var(--space-3); grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(2,1fr)}
+    .btn{
+      border:0; border-radius:var(--r-md); height:100%; padding:12px;
+      display:grid; place-items:center; text-align:center; user-select:none; cursor:pointer;
+      color:#fff; font-weight:800; font-size:18px; line-height:1.12;
+      box-shadow: inset 0 -1.5px 0 rgba(255,255,255,.2), 0 10px 24px rgba(0,0,0,.25);
+      transition:transform .08s ease, filter .12s ease, box-shadow .12s ease, opacity .2s ease;
+      touch-action:manipulation;
     }
-    .stat {
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
-      border: 1px solid var(--panel-border);
-      border-radius: var(--r-md);
-      padding: var(--space-3);
-      display: grid; gap: 6px;
-    }
-    .label { color: var(--muted); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
-    .value { font-size: 18px; font-weight: 700; }
-    .value.big { font-size: 26px; font-weight: 900; }
+    .btn:active{transform:translateY(1px) scale(.99); filter:brightness(.98)}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+    .btn .sub{font-size:15px; font-weight:700; opacity:.95}
+    .chip{margin-top:6px; font-size:14px; font-weight:700; padding:4px 10px; border-radius:999px;
+          background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.22)}
 
-    /* ======= Actions: bilety + monety ======= */
-    .actions {
-      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);
-    }
-    .grid {
-      display: grid; gap: var(--space-3);
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      align-items: stretch;
-    }
-    .btn {
-      display: grid; place-items: center; text-align: center;
-      border: 0; border-radius: var(--r-md);
-      padding: 10px; height: 100%;
-      color: #fff; cursor: pointer; user-select: none;
-      font-weight: 800; font-size: 18px; line-height: 1.12;
-      box-shadow: 0 10px 20px rgba(0,0,0,.22), inset 0 -2px 0 rgba(255,255,255,.18);
-      transition: transform .08s ease, box-shadow .12s ease, filter .12s ease, opacity .2s ease;
-      touch-action: manipulation;
-    }
-    .btn:active { transform: translateY(1px) scale(.99); filter: brightness(.98); box-shadow: 0 6px 14px rgba(0,0,0,.28); }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .btn .sub { font-size: 15px; font-weight: 700; opacity: .95; }
-    .chip {
-      margin-top: 6px;
-      font-size: 14px; font-weight: 700; opacity: .9;
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.22);
-      padding: 4px 10px; border-radius: 999px;
-    }
+    /* iOS system palettes for tiles */
+    .t-normal  {background:linear-gradient(135deg,var(--sys-green-1),var(--sys-green-2))}
+    .t-kid     {background:linear-gradient(135deg,var(--sys-blue-1),var(--sys-blue-2))}
+    .t-luggage {background:linear-gradient(135deg,var(--sys-orange-1),var(--sys-orange-2))}
+    .t-senior  {background:linear-gradient(135deg,var(--sys-purple-1),var(--sys-purple-2))}
+    .t-disabled{background:linear-gradient(135deg,var(--sys-pink-1),var(--sys-pink-2))}
+    .t-stroller{background:linear-gradient(135deg,var(--sys-mint-1),var(--sys-mint-2))}
+    .t-bike    {background:linear-gradient(135deg,var(--sys-teal-1),var(--sys-teal-2))}
+    .t-tourist {background:linear-gradient(135deg,var(--sys-red-1),var(--sys-red-2))}
+    .coin      {background:linear-gradient(135deg,var(--sys-yellow-1),var(--sys-yellow-2)); color:#1f2937}
 
-    /* Ticket palettes */
-    .t-normal  { background: linear-gradient(135deg,#34d399,#059669); }
-    .t-kid     { background: linear-gradient(135deg,#60a5fa,#2563eb); }
-    .t-luggage { background: linear-gradient(135deg,#fb923c,#c2410c); }
-    .t-senior  { background: linear-gradient(135deg,#a78bfa,#7c3aed); }
-    .t-disabled{ background: linear-gradient(135deg,#f472b6,#be185d); }
-    .t-stroller{ background: linear-gradient(135deg,#2dd4bf,#0f766e); }
-    .t-bike    { background: linear-gradient(135deg,#a3e635,#4d7c0f); }
-    .t-tourist { background: linear-gradient(135deg,#f87171,#dc2626); }
-
-    .coin      { background: linear-gradient(135deg,#fde047,#f59e0b); color: #1f2937; }
-
-    /* ======= Status (dół) ======= */
-    .status {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: var(--space-3);
-    }
-    .status .stat { align-items: center; grid-auto-rows: min-content; }
-
-    /* ======= Right column (score/history) ======= */
-    .score {
-      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);
-      align-items: center;
-    }
-    .kpi {
-      display: grid; gap: 6px; padding: var(--space-3);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
-      border: 1px solid var(--panel-border);
-      border-radius: var(--r-md);
-    }
-    .kpi .big { font-size: 28px; font-weight: 900; text-align: right; }
-    .history {
-      display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; height: 100%; overflow: auto;
-    }
-    .row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 12px; border-radius: var(--r-sm);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
-      border: 1px solid var(--panel-border);
-    }
-    .badge {
-      font-size: 13px; font-weight: 700;
-      padding: 4px 8px; border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.10);
-    }
-
-    /* ======= Accessibility: focus without brzydkiej obwódki ======= */
-    .btn:focus-visible { outline: 3px solid rgba(125,211,252,.7); outline-offset: 2px; }
-
+    /* Status + right column */
+    .status{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--space-3)}
+    .score{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3)}
+    .kpi{display:grid; gap:6px; padding:var(--space-3);
+         background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+         border:1px solid var(--panel-border); border-radius:var(--r-md)}
+    .kpi .big{font-size:28px; font-weight:900; text-align:right}
+    .history{margin:0; padding:0; list-style:none; display:grid; gap:12px; height:100%; overflow:auto}
+    .row{display:flex; align-items:center; justify-content:space-between; padding:10px 12px;
+         border-radius:var(--r-sm); background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+         border:1px solid var(--panel-border)}
+    .badge{font-size:13px; font-weight:700; padding:4px 8px; border-radius:999px;
+           border:1px solid rgba(255,255,255,.22); background:rgba(255,255,255,.10)}
   </style>
 </head>
 <body>
   <div id="viewport">
     <div id="stage">
       <div class="app">
-        <!-- LEWA: gra -->
+        <!-- LEFT -->
         <section class="left">
           <header class="panel">
             <h1>🚌 Ticket Rush</h1>
@@ -243,7 +163,7 @@
           </section>
         </section>
 
-        <!-- PRAWA: wynik + historia -->
+        <!-- RIGHT -->
         <aside class="right">
           <section class="panel score">
             <div class="kpi"><div class="label">Punkty</div><div class="big" id="score">0</div></div>
@@ -259,204 +179,128 @@
   </div>
 
   <script>
-    /* ===== iOS: blokada niechcianego zooma (double-tap/pinch) ===== */
+    /* iOS: no accidental zoom */
     (function(){
       let last=0;
-      document.addEventListener('touchend',e=>{
-        const now=Date.now(); if(now-last<350){ e.preventDefault(); } last=now;
-      },{passive:false});
+      document.addEventListener('touchend',e=>{const now=Date.now(); if(now-last<350){e.preventDefault()} last=now},{passive:false});
       document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
     })();
 
-    /* ===== Dynamiczny, WYŚRODKOWANY fullscreen =====
-       - Wysokość sceny trzymamy stałą (720), szerokość liczymy z proporcji ekranu.
-       - Skala liczona tak, by scena *dokładnie* domknęła ekran w landscape.
-    */
-    (function fit(){
-      const stage = document.getElementById('stage');
-      const viewport = document.getElementById('viewport');
-      const BASE_H = 720;
+    /* PERFECT CENTER + FULLSCREEN SCALE */
+    (function(){
+      const stage=document.getElementById('stage');
+      const BASE_H=720; // referencyjna wysokość projektu (stabilna typografia)
 
-      function doFit(){
-        const vv = window.visualViewport || { width: innerWidth, height: innerHeight };
-        const vw = vv.width, vh = vv.height, ratio = vw / vh;
-        const baseW = Math.max(1024, Math.round(BASE_H * ratio));   // adaptacja do urządzenia
-
-        stage.style.width  = baseW + 'px';
-        stage.style.height = BASE_H + 'px';
-
-        const scale = Math.min(vw / baseW, vh / BASE_H);
-        stage.style.setProperty('--fit', scale);
-
-        // Wyśrodkowanie sceny w obu osiach (bo transform-origin: center)
+      function fit(){
+        const vv=window.visualViewport || {width:innerWidth, height:innerHeight};
+        const vw=vv.width, vh=vv.height, ratio=vw/vh;
+        const baseW=Math.round(BASE_H*ratio);       // dokładnie pod proporcje urządzenia
+        stage.style.width=baseW+'px';
+        stage.style.height=BASE_H+'px';
+        const scale=Math.min(vw/baseW, vh/BASE_H);
+        stage.style.setProperty('--fit', scale);    // translate(-50%,-50%) dba o wyśrodkowanie
       }
-      window.addEventListener('resize', doFit);
-      window.addEventListener('orientationchange', ()=>setTimeout(doFit, 60));
-      if (document.fonts?.ready) document.fonts.ready.then(doFit);
-      new ResizeObserver(doFit).observe(viewport);
-      doFit();
+      addEventListener('resize', fit);
+      addEventListener('orientationchange', ()=>setTimeout(fit,60));
+      document.fonts?.ready.then(fit);
+      new ResizeObserver(fit).observe(document.getElementById('viewport'));
+      fit();
     })();
 
-    /* ===== Dane gry (bez zmian logiki) ===== */
-    const ticketTypes = [
-      { name:"Normal", price:1.2, cls:"t-normal" },
-      { name:"Kid", price:0.5, cls:"t-kid" },
-      { name:"Luggage", price:0.6, cls:"t-luggage" },
-      { name:"Senior", price:0.8, cls:"t-senior" },
-      { name:"Disabled", price:0.6, cls:"t-disabled" },
-      { name:"Baby Stroller", price:0.7, cls:"t-stroller" },
-      { name:"Bike", price:0.9, cls:"t-bike" },
-      { name:"Tourist", price:1.5, cls:"t-tourist" }
+    /* ===== GAME DATA (bez zmian mechaniki) ===== */
+    const ticketTypes=[
+      {name:"Normal", price:1.2, cls:"t-normal"},
+      {name:"Kid", price:0.5, cls:"t-kid"},
+      {name:"Luggage", price:0.6, cls:"t-luggage"},
+      {name:"Senior", price:0.8, cls:"t-senior"},
+      {name:"Disabled", price:0.6, cls:"t-disabled"},
+      {name:"Baby Stroller", price:0.7, cls:"t-stroller"},
+      {name:"Bike", price:0.9, cls:"t-bike"},
+      {name:"Tourist", price:1.5, cls:"t-tourist"}
     ];
     const coins=[5,2,1,0.5,0.25,0.1,0.05,0.01];
 
-    /* ===== UI refs ===== */
-    const $ = (id)=>document.getElementById(id);
+    const $=id=>document.getElementById(id);
     const timerDisplay=$("timer"), scoreDisplay=$("score"), roundDisplay=$("round"), historyList=$("history");
     const needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"), pickedEl=$("picked"), choiceEl=$("choice");
     const insertedEl=$("inserted"), remainEl=$("remain"), mixEl=$("mix");
     const ticketsWrap=$("tickets"), coinsWrap=$("coins");
 
-    /* ===== State ===== */
-    const TOTAL_ROUNDS=5;
-    let currentRound=0, score=0, timerId=null;
-    const state={
-      request:{}, ticketTotal:0, pays:0,
-      selectedTickets:{}, coinsUsed:{}, inserted:0,
-      timeLeft:20, history:[]
-    };
+    const TOTAL_ROUNDS=5; let currentRound=0, score=0, timerId=null;
+    const state={request:{}, ticketTotal:0, pays:0, selectedTickets:{}, coinsUsed:{}, inserted:0, timeLeft:20, history:[]};
 
-    /* ===== Helpers ===== */
-    function rndReq(){
-      const out={}; const uniq=Math.floor(Math.random()*2)+1;
-      const pool=[...ticketTypes];
-      for(let i=0;i<uniq;i++){
-        const pick=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
-        const [t]=pool.splice(pick,1); const cnt=Math.floor(Math.random()*3)+1;
-        out[t.name]=cnt;
-      }
-      return out;
-    }
-    const calcFare = (req)=>Object.entries(req).reduce((s,[n,c])=>{
-      const t=ticketTypes.find(x=>x.name===n); return s + (t?t.price*c:0);
-    },0);
+    const rndReq=()=>{const out={}, uniq=Math.floor(Math.random()*2)+1, pool=[...ticketTypes];
+      for(let i=0;i<uniq;i++){const pick=Math.floor(Math.random()*Math.min(3+currentRound,pool.length)); const [t]=pool.splice(pick,1); const cnt=Math.floor(Math.random()*3)+1; out[t.name]=cnt}
+      return out};
+    const calcFare=req=>Object.entries(req).reduce((s,[n,c])=>{const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0)},0);
     const uniqCoins=()=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
 
-    /* ===== Render: bilety i monety (duże, dotykowe, Apple-like) ===== */
     function renderActions(){
-      ticketsWrap.innerHTML = ticketTypes.map(t=>{
-        const count=state.selectedTickets[t.name]||0;
-        const need=state.request[t.name]||0;
-        const disabled = need>0 && count>=need;
-        return `<button class="btn ${t.cls}" ${disabled?'disabled':''}
+      ticketsWrap.innerHTML=ticketTypes.map(t=>{
+        const count=state.selectedTickets[t.name]||0, need=state.request[t.name]||0, dis=need>0&&count>=need;
+        return `<button class="btn ${t.cls}" ${dis?'disabled':''}
                   onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
                   <div class="sub">${t.name}</div>
                   <div>$${t.price.toFixed(2)}</div>
                   <div class="chip">${count} / ${need||0}</div>
-                </button>`;
+                </button>`
       }).join("");
-
-      coinsWrap.innerHTML = coins.map(v=>`
+      coinsWrap.innerHTML=coins.map(v=>`
         <button class="btn coin" onclick="insertCoin(${v})">
           <div class="sub">Moneta</div>
           <div>$${v.toFixed(2)}</div>
           <div class="chip">×${state.coinsUsed[v]||0}</div>
-        </button>
-      `).join("");
+        </button>`).join("");
     }
 
-    /* ===== HUD ===== */
     function updateHud(){
       scoreDisplay.textContent=score;
       roundDisplay.textContent=`${Math.min(currentRound,TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
-      historyList.innerHTML=state.history.map(
-        ({round:r,success,reason,bonuses})=>`
-          <li class="row">
-            <span><strong>Runda ${r}</strong> ${success?'✅':'❌'} ${reason}</span>
-            ${bonuses.length?`<span class="badge">${bonuses.join(' • ')}</span>`:''}
-          </li>`
-      ).join("");
-
-      needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
-      paysEl.textContent = `$${state.pays.toFixed(2)}`;
-      fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
-
-      const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
-        const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0);
-      },0);
-      pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
-      choiceEl.textContent = Object.entries(state.selectedTickets).map(([n,c])=>`${c}× ${n}`).join(", ") || "—";
-
-      insertedEl.textContent = `$${state.inserted.toFixed(2)}`;
-      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
-      const remaining = +(changeDue - state.inserted).toFixed(2);
-      remainEl.textContent = `$${Math.max(remaining,0).toFixed(2)}`;
-      mixEl.textContent = uniqCoins();
+      historyList.innerHTML=state.history.map(({round:r,success,reason,bonuses})=>`
+        <li class="row"><span><strong>Runda ${r}</strong> ${success?'✅':'❌'} ${reason}</span>${bonuses.length?`<span class="badge">${bonuses.join(' • ')}</span>`:''}</li>`).join("")
+      needEl.textContent=Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+      paysEl.textContent=`$${state.pays.toFixed(2)}`;
+      fareEl.textContent=`$${state.ticketTotal.toFixed(2)}`;
+      const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0)},0);
+      pickedEl.textContent=`$${selectedValue.toFixed(2)}`;
+      choiceEl.textContent=Object.entries(state.selectedTickets).map(([n,c])=>`${c}× ${n}`).join(", ")||"—";
+      insertedEl.textContent=`$${state.inserted.toFixed(2)}`;
+      const changeDue=+(state.pays-state.ticketTotal).toFixed(2), remaining=+(changeDue-state.inserted).toFixed(2);
+      remainEl.textContent=`$${Math.max(remaining,0).toFixed(2)}`; mixEl.textContent=uniqCoins();
     }
 
-    /* ===== Flow (bez zmian logiki) ===== */
     function startRound(){
-      currentRound+=1;
-      if(currentRound> TOTAL_ROUNDS){showSummary(); return;}
-      Object.assign(state,{
-        request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0, timeLeft:20
-      });
+      currentRound+=1; if(currentRound> TOTAL_ROUNDS){showSummary(); return;}
+      Object.assign(state,{request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0, timeLeft:20});
       state.ticketTotal=+calcFare(state.request).toFixed(2);
       const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
       state.pays=+(state.ticketTotal+extra).toFixed(2);
       renderActions(); updateHud(); startTimer();
     }
-    function startTimer(){
-      stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
-      timerId=setInterval(()=>{
-        state.timeLeft-=1;
-        if(state.timeLeft<=0){ timerDisplay.textContent=`0 s`; stopTimer(); finish(false,{reason:"Upłynął czas"}); return; }
-        timerDisplay.textContent=`${state.timeLeft} s`;
-      },1000);
-    }
-    function stopTimer(){ if(timerId!==null){clearInterval(timerId); timerId=null;} }
-    function finish(ok,{reason="",bonuses=[]}={}){
-      stopTimer();
-      const timeBonus = state.timeLeft>5 ? "Premia za czas" : null;
-      const mixBonus = uniqCoins()<3 && state.inserted>0 ? "Premia za resztę" : null;
+    function startTimer(){ stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
+      timerId=setInterval(()=>{ state.timeLeft-=1; if(state.timeLeft<=0){timerDisplay.textContent='0 s'; stopTimer(); finish(false,{reason:'Upłynął czas'}); return} timerDisplay.textContent=`${state.timeLeft} s`},1000)}
+    function stopTimer(){ if(timerId!==null){clearInterval(timerId); timerId=null} }
+    function finish(ok,{reason="",bonuses=[]}={}){ stopTimer();
+      const timeBonus=state.timeLeft>5?"Premia za czas":null, mixBonus=uniqCoins()<3&&state.inserted>0?"Premia za resztę":null;
       if(timeBonus)bonuses.push(timeBonus); if(mixBonus)bonuses.push(mixBonus);
       score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
-      state.history.unshift({round:currentRound, success:ok, reason: reason || (ok?"Sprzedaż poprawna":"Błąd"), bonuses});
-      state.history=state.history.slice(0,6);
-      updateHud();
-      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,800); else setTimeout(()=>startRound(),800);
+      state.history.unshift({round:currentRound, success:ok, reason:reason||(ok?"Sprzedaż poprawna":"Błąd"), bonuses});
+      state.history=state.history.slice(0,6); updateHud();
+      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,900); else setTimeout(()=>startRound(),900);
     }
-    function showSummary(){
-      state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]});
-      updateHud();
-    }
+    function showSummary(){ state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]}); updateHud(); }
 
-    /* ===== Actions ===== */
-    window.addTicket=function(name){
-      const req=state.request[name]||0; const cur=state.selectedTickets[name]||0;
-      if(cur>=req && req>0) return;
-      state.selectedTickets[name]=(cur+1); updateHud(); checkAutoFinish();
-    }
-    window.removeTicket=function(name){
-      const cur=state.selectedTickets[name]||0; if(cur<=0) return;
-      state.selectedTickets[name]=cur-1; if(state.selectedTickets[name]<=0) delete state.selectedTickets[name];
-      updateHud(); checkAutoFinish();
-    }
-    window.insertCoin=function(v){
-      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
-      const next=+(state.inserted+v).toFixed(2);
-      if(next - changeDue > 0.001){ finish(false,{reason:"Wydano za dużo reszty"}); return; }
-      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1; updateHud(); checkAutoFinish();
-    }
-    function checkAutoFinish(){
-      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
-      const goodMoney=Math.abs(state.inserted - changeDue)<=0.001;
-      const goodTickets=Object.entries(state.request).every(([n,c])=> (state.selectedTickets[n]||0)===c)
-                        && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
-      if(goodMoney && goodTickets) finish(true,{reason:"Sprzedaż poprawna"});
-    }
+    window.addTicket=function(n){const req=state.request[n]||0, cur=state.selectedTickets[n]||0; if(cur>=req&&req>0)return; state.selectedTickets[n]=cur+1; updateHud(); checkAutoFinish();}
+    window.removeTicket=function(n){const cur=state.selectedTickets[n]||0; if(cur<=0)return; state.selectedTickets[n]=cur-1; if(state.selectedTickets[n]<=0) delete state.selectedTickets[n]; updateHud(); checkAutoFinish();}
+    window.insertCoin=function(v){const changeDue=+(state.pays-state.ticketTotal).toFixed(2), next=+(state.inserted+v).toFixed(2);
+      if(next-changeDue>0.001){finish(false,{reason:"Wydano za dużo reszty"}); return}
+      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1; updateHud(); checkAutoFinish(); }
+    function checkAutoFinish(){ const changeDue=+(state.pays-state.ticketTotal).toFixed(2);
+      const goodMoney=Math.abs(state.inserted-changeDue)<=0.001;
+      const goodTickets=Object.entries(state.request).every(([n,c])=>(state.selectedTickets[n]||0)===c)
+        && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
+      if(goodMoney&&goodTickets) finish(true,{reason:"Sprzedaż poprawna"}); }
 
-    /* Start */
     updateHud(); startRound();
   </script>
 </body>
