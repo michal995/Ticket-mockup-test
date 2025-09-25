@@ -2,889 +2,317 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Ticket Rush – Bus Simulator PRO</title>
+  <meta
+    name="viewport"
+    content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Ticket Rush — Bus Simulator PRO</title>
   <style>
-    :root {
+    :root{
       color-scheme: dark;
-      --bg: #0f172a;
-      --card: #1e293b;
-      --primary: #38bdf8;
-      --success: #4ade80;
-      --danger: #f87171;
-      --warning: #facc15;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --frame-pad: clamp(1rem, 4vw, 2.4rem);
-      --panel-gap: clamp(1rem, 4vw, 2rem);
-      --surface-radius: clamp(1.2rem, 3vw, 1.8rem);
-      --panel-radius: clamp(0.9rem, 2.2vw, 1.4rem);
-      --button-radius: clamp(0.6rem, 1.6vw, 1rem);
+      --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --muted:#94a3b8;
+      --ok:#4ade80; --bad:#f87171; --warn:#facc15;
+      --br:16px; --pad:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100dvh}
+    body{
+      margin:0; background:radial-gradient(circle at top, rgba(56,189,248,.25), transparent 55%),
+                          radial-gradient(circle at bottom, rgba(74,222,128,.18), transparent 45%), var(--bg);
+      color:var(--text); font-family:Inter, Segoe UI, system-ui, sans-serif; overflow:hidden;
     }
 
-    * {
-      box-sizing: border-box;
+    /* ==== FIT TO SCREEN ==== */
+    #viewport{position:fixed; inset:0; display:grid; place-items:center}
+    #stage{width:1280px; height:720px; transform-origin:top left; transform:scale(var(--fit,1))}
+
+    /* ==== APP FRAME (1280x720) ==== */
+    .app{
+      width:100%; height:100%; display:grid; grid-template-columns: 820px 440px; gap:16px; padding:16px;
+      background:rgba(30,41,59,.85); border:1px solid rgba(148,163,184,.25); border-radius:20px;
+      box-shadow:0 32px 60px rgba(15,23,42,.45);
     }
+    .panel{background:rgba(15,23,42,.72); border:1px solid rgba(148,163,184,.14); border-radius:16px; padding:14px}
+    .left{display:grid; grid-template-rows: 70px 170px 360px 90px; gap:12px}
+    .right{display:grid; grid-template-rows: 120px 1fr; gap:12px}
 
-    body {
-      margin: 0;
-      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.25), transparent 55%),
-        radial-gradient(circle at bottom, rgba(74, 222, 128, 0.18), transparent 45%), var(--bg);
-      color: var(--text);
-      min-height: 100dvh;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      padding: var(--frame-pad);
+    /* header */
+    header{display:flex; align-items:center; justify-content:space-between}
+    h1{margin:0; font-size:28px; letter-spacing:.02em}
+    .timer{color:var(--warn); font-weight:800; font-size:22px}
+
+    /* request row (5 kolumn) */
+    .request{display:grid; grid-template-columns: repeat(5, 1fr); column-gap:12px; row-gap:6px; align-content:start}
+    .meta{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.1em}
+    .val-big{font-size:24px; font-weight:800}
+    .val{font-size:18px; font-weight:700}
+
+    /* actions: 2 kolumny (bilety | monety) */
+    .actions{display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%}
+    .tickets,.coins{display:grid; grid-template-rows: 1fr 1fr; grid-template-columns: repeat(4, 1fr); gap:10px}
+    .btn{
+      border:0; border-radius:14px; color:#fff; font-weight:800; cursor:pointer; display:grid; place-items:center;
+      line-height:1.1; padding:8px; height:100%; text-align:center; font-size:14px;
     }
-
-    main {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--panel-gap);
-      width: min(94vw, 160vh);
-      max-height: calc(100dvh - 2 * var(--frame-pad));
-      background: color-mix(in srgb, var(--card) 85%, transparent);
-      border-radius: var(--surface-radius);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      padding: clamp(1.1rem, 3vw, 2rem);
-      box-shadow: 0 32px 60px rgba(15, 23, 42, 0.45);
-      overflow: hidden;
-    }
-
-    .board {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-      gap: var(--panel-gap);
-      min-width: 0;
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: clamp(0.6rem, 1.6vw, 1.1rem);
-    }
-
-    h1 {
-      font-size: clamp(1.6rem, 3vw, 2.3rem);
-      margin: 0;
-      letter-spacing: 0.04em;
-    }
-
-    .timer {
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: clamp(0.5rem, 1.2vw, 0.8rem);
-      color: var(--warning);
-    }
-
-    .panel {
-      background: rgba(15, 23, 42, 0.7);
-      border-radius: var(--panel-radius);
-      padding: clamp(0.9rem, 2.6vw, 1.6rem);
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      display: grid;
-      gap: clamp(0.8rem, 2vw, 1.4rem);
-      min-height: 0;
-    }
-
-    #game {
-      min-height: 0;
-    }
-
-    #game.board-layout {
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      gap: clamp(0.8rem, 2vw, 1.4rem);
-    }
-
-    #game.board-layout > .actions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: clamp(0.8rem, 2vw, 1.4rem);
-      min-height: 0;
-    }
-
-    #game.board-layout > .actions > .tickets,
-    #game.board-layout > .actions > .coins {
-      min-height: 0;
-    }
-
-    .sidebar {
-      align-content: start;
-      gap: clamp(0.8rem, 2vw, 1.4rem);
-      min-width: 0;
-    }
-
-    .sidebar .history {
-      max-height: 42vh;
-      overflow-y: auto;
-    }
-
-    .request {
-      display: grid;
-      gap: clamp(0.6rem, 1.8vw, 1.1rem);
-      font-size: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(18vw, 1fr));
-    }
-
-    .request > div {
-      display: grid;
-      gap: clamp(0.25rem, 0.8vw, 0.5rem);
-      min-width: 0;
-    }
-
-    .request strong {
-      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-    }
-
-    .tickets,
-    .coins {
-      display: grid;
-      gap: clamp(0.6rem, 1.6vw, 1rem);
-    }
-
-    .tickets {
-      grid-auto-flow: column;
-      grid-template-rows: repeat(2, minmax(7vh, 1fr));
-      grid-auto-columns: minmax(16vw, 1fr);
-      align-content: stretch;
-      justify-content: center;
-    }
-
-    .coins {
-      grid-auto-flow: column;
-      grid-template-rows: repeat(2, minmax(6vh, 1fr));
-      grid-auto-columns: minmax(14vw, 1fr);
-      align-content: stretch;
-      justify-content: center;
-    }
-
-    button {
-      border: none;
-      border-radius: var(--button-radius);
-      padding: clamp(0.5rem, 1.6vh, 0.9rem) clamp(0.6rem, 1.6vw, 1rem);
-      font-weight: 700;
-      font-size: clamp(0.78rem, 1.6vw, 0.95rem);
-      color: white;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-      display: grid;
-      gap: clamp(0.3rem, 1vw, 0.5rem);
-      place-content: center;
-      height: 100%;
-    }
-
-    button:hover {
-      transform: translateY(-0.2rem);
-      box-shadow: 0 2rem 3.75rem rgba(15, 23, 42, 0.35);
-    }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: none;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.45;
-      transform: none;
-      box-shadow: none;
-    }
-
-    .ticket-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      opacity: 0.9;
-    }
-
-    .ticket-count {
-      font-size: clamp(1.1rem, 2.4vw, 1.3rem);
-    }
-
-    .status {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: clamp(0.6rem, 1.6vw, 1rem);
-      align-items: center;
-      font-size: clamp(0.85rem, 1.5vw, 1rem);
-    }
-
-    .status > div {
-      display: flex;
-      align-items: center;
-      gap: clamp(0.3rem, 1vw, 0.6rem);
-    }
-
-    .status strong {
-      font-size: clamp(1.1rem, 2vw, 1.4rem);
-    }
-
-    .highlight {
-      font-size: clamp(1.6rem, 4vw, 2.2rem);
-      font-weight: 800;
-    }
-
-    .summary {
-      text-align: center;
-      display: grid;
-      gap: clamp(0.8rem, 2vw, 1.4rem);
-    }
-
-    .summary h2 {
-      font-size: clamp(2rem, 5vw, 2.6rem);
-      margin: 0;
-    }
-
-    .history {
-      display: grid;
-      gap: clamp(0.4rem, 1vw, 0.7rem);
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      font-size: clamp(0.8rem, 1.6vw, 0.95rem);
-    }
-
-    .tag {
-      padding: clamp(0.3rem, 0.8vw, 0.5rem) clamp(0.5rem, 1.2vw, 0.8rem);
-      border-radius: 999px;
-      background: rgba(148, 163, 184, 0.18);
-      font-size: clamp(0.7rem, 1.2vw, 0.85rem);
-      display: inline-flex;
-      gap: clamp(0.3rem, 1vw, 0.6rem);
-      align-items: center;
-    }
-
-    .feedback {
-      font-size: clamp(1.8rem, 4vw, 2.4rem);
-      font-weight: 700;
-      text-align: center;
-      padding: clamp(1.2rem, 4vh, 2.4rem) clamp(0.6rem, 2vw, 1.2rem);
-    }
-
-    .feedback.success {
-      color: var(--success);
-    }
-
-    .feedback.fail {
-      color: var(--danger);
-    }
-
-    .meta {
-      color: var(--muted);
-      font-size: clamp(0.75rem, 1.4vw, 0.9rem);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-    }
-
-    .spacer {
-      height: clamp(0.6rem, 2vh, 0.9rem);
-    }
-
-    /* LANDSCAPE LAYOUT: viewport-filling rules for the mobile game board */
-    @media (orientation: landscape) {
-      :root {
-        --frame-pad: clamp(1.4vh, 2.6vw, 2.8vh); /* LANDSCAPE LAYOUT: safe padding scales with viewport */
-        --panel-gap: clamp(1.2vh, 2.4vw, 2vh); /* LANDSCAPE LAYOUT: grid gap adapts to viewport */
-      }
-
-      body {
-        padding: var(--frame-pad);
-        overflow: hidden; /* LANDSCAPE LAYOUT: disables page scrolling */
-      }
-
-      main {
-        grid-template-columns: minmax(0, 0.6fr) minmax(0, 0.4fr); /* LANDSCAPE LAYOUT: two-column app frame */
-        width: min(96vw, 170vh); /* LANDSCAPE LAYOUT: width tied to phone viewport */
-        height: calc(100dvh - 2 * var(--frame-pad)); /* LANDSCAPE LAYOUT: card height locked to viewport */
-        max-height: none;
-        padding: clamp(1rem, 2.4vw, 2rem);
-      }
-
-      .board {
-        grid-template-rows: minmax(12vh, 0.28fr) minmax(0, 0.72fr); /* LANDSCAPE LAYOUT: header band stays visible */
-        gap: var(--panel-gap);
-      }
-
-      #game.board-layout {
-        grid-template-rows: minmax(18vh, 0.34fr) minmax(0, 0.38fr) minmax(16vh, 0.28fr); /* LANDSCAPE LAYOUT: request/actions/status fit screen */
-        gap: var(--panel-gap);
-      }
-
-      #game.board-layout > .actions {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--panel-gap);
-      }
-
-      .tickets {
-        grid-auto-flow: column;
-        grid-template-rows: repeat(2, minmax(6.2vh, 1fr)); /* LANDSCAPE LAYOUT: tickets stay in two visible rows */
-        grid-auto-columns: minmax(13vw, 1fr);
-      }
-
-      .coins {
-        grid-auto-flow: column;
-        grid-template-rows: repeat(2, minmax(5.4vh, 1fr)); /* LANDSCAPE LAYOUT: coins stay in two visible rows */
-        grid-auto-columns: minmax(11vw, 1fr);
-      }
-
-      .sidebar {
-        grid-template-rows: minmax(16vh, 0.36fr) minmax(0, 0.64fr); /* LANDSCAPE LAYOUT: score and history share height */
-        gap: var(--panel-gap);
-      }
-
-      .sidebar .history {
-        max-height: 100%;
-      }
-
-      h1 {
-        font-size: clamp(1.4rem, 2.4vw, 2.2rem);
-      }
-
-      .timer {
-        font-size: clamp(1.1rem, 2.2vw, 1.8rem);
-      }
-
-      button {
-        font-size: clamp(0.68rem, 1.2vw, 0.95rem); /* LANDSCAPE LAYOUT: touch targets scale with viewport */
-        padding: clamp(0.5vh, 1vh, 0.75vh) clamp(0.7vw, 1.2vw, 1vw);
-      }
-
-      .ticket-label {
-        font-size: clamp(0.6rem, 1vw, 0.75rem);
-      }
-
-      .ticket-count {
-        font-size: clamp(0.95rem, 1.6vw, 1.3rem);
-      }
-
-      .highlight {
-        font-size: clamp(1.4rem, 2.6vw, 2.2rem);
-      }
-
-      .meta,
-      .history {
-        font-size: clamp(0.7rem, 1vw, 0.9rem);
-      }
-    }
-
-
-    /* === OVERRIDE: czysty layout landscape, wszystko mieści się na 1 ekranie === */
-@media (orientation: landscape) {
-  html, body { height: 100dvh; overflow: hidden; }
-
-  main {
-    display: grid;
-    grid-template-columns: 62% 38%;
-    grid-template-rows: 100%;
-    width: 100vw;
-    height: 100dvh;
-    max-width: 100vw;
-    max-height: 100dvh;
-    padding: clamp(8px, 1.8vmin, 14px);
-    gap: clamp(8px, 1.6vmin, 14px);
-    overflow: hidden;
-  }
-
-  .board { 
-    display: grid;
-    grid-template-rows: minmax(0, 22%) minmax(0, 78%);  /* nagłówek + reszta */
-    gap: clamp(8px, 1.6vmin, 14px);
-    min-width: 0; min-height: 0;
-  }
-
-  header {
-    align-items: center;
-    gap: clamp(6px, 1.2vmin, 10px);
-  }
-
-  h1 { 
-    font-size: clamp(14px, 2.4vmin, 22px);
-    line-height: 1.15; margin: 0;
-  }
-  .timer { font-size: clamp(12px, 2.2vmin, 18px); }
-
-  /* PANEL GRY: 3 pasy – opis, akcje (bilety/monety), status */
-  #game.board-layout {
-    display: grid;
-    grid-template-rows: minmax(0, 32%) minmax(0, 48%) minmax(0, 20%);
-    gap: clamp(8px, 1.4vmin, 14px);
-    min-height: 0; overflow: hidden;
-  }
-
-  /* opis (request) – 5 kolumn, drobniejsze fonty */
-  .request {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: clamp(6px, 1.2vmin, 10px);
-    font-size: clamp(10px, 1.6vmin, 14px);
-  }
-  .request strong { font-size: clamp(12px, 1.8vmin, 16px); }
-  .highlight { font-size: clamp(14px, 2.2vmin, 18px); }
-
-  /* pas „akcje”: dwie kolumny: LEWO bilety, PRAWO monety */
-  #game.board-layout > .actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(8px, 1.4vmin, 14px);
-    min-height: 0;
-  }
-
-  /* BILETY/ MONETY – 2 rzędy, auto-fit w szerokości kontenera (NIE vw) */
-  .tickets, .coins {
-    display: grid;
-    grid-template-rows: 1fr 1fr;        /* zawsze dwie linie, wszystko widać */
-    grid-auto-flow: dense;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    gap: clamp(6px, 1.2vmin, 10px);
-    min-height: 0; min-width: 0;
-  }
-
-  /* przyciski dopasowane do komórki */
-  button {
-    height: 100%;
-    padding: clamp(6px, 1.2vmin, 10px);
-    font-size: clamp(10px, 1.6vmin, 13px);
-    line-height: 1.15;
-  }
-  .ticket-label { font-size: clamp(9px, 1.4vmin, 11px); }
-  .ticket-count { font-size: clamp(11px, 1.8vmin, 14px); }
-
-  /* status (3 kolumny) */
-  .status {
-    grid-template-columns: repeat(3, 1fr);
-    gap: clamp(6px, 1.2vmin, 10px);
-    font-size: clamp(10px, 1.6vmin, 13px);
-  }
-  .status strong { font-size: clamp(12px, 1.8vmin, 16px); }
-
-  /* boczny panel: przewijana tylko historia */
-  .sidebar {
-    display: grid;
-    grid-template-rows: minmax(0, 32%) minmax(0, 68%);
-    gap: clamp(8px, 1.4vmin, 14px);
-    min-height: 0; overflow: hidden;
-  }
-  .sidebar .history { max-height: 100%; overflow: auto; }
-
-  /* panele nie mają własnego scrolla, żeby nic nie „wychodziło” */
-  .panel { overflow: hidden; }
-}
-
-/* === FIT-TO-SCREEN: skalowanie całej gry do ekranu (bez scrolla) === */
-html, body { height: 100dvh; }
-body { overflow: hidden; }
-
-/* Kontener-viewport wypełnia ekran */
-#viewport {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: transparent; /* Twój gradient zostaje w body */
-}
-
-/* "Scena" ma stały rozmiar projektowy (np. 1280x720 ~ 16:9) i skaluje się cała naraz */
-#stage {
-  width: 1280px;           /* logiczna szerokość */
-  height: 720px;           /* logiczna wysokość */
-  transform-origin: top left;
-  transform: scale(var(--fit-scale, 1));
-  will-change: transform;
-}
-
-/* Żeby Twoje dotychczasowe style się stosowały do zawartości: przeniesiemy main do #stage */
-#stage > main {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  overflow: hidden;
-}
-
-    
-
+    .btn small{font-weight:600; font-size:11px; opacity:.85}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+
+    /* ticket colors */
+    .t-normal{background:linear-gradient(135deg,#4ade80,#16a34a)}
+    .t-kid{background:linear-gradient(135deg,#38bdf8,#2563eb)}
+    .t-luggage{background:linear-gradient(135deg,#f97316,#c2410c)}
+    .t-senior{background:linear-gradient(135deg,#a855f7,#7c3aed)}
+    .t-disabled{background:linear-gradient(135deg,#ec4899,#db2777)}
+    .t-stroller{background:linear-gradient(135deg,#14b8a6,#0f766e)}
+    .t-bike{background:linear-gradient(135deg,#84cc16,#4d7c0f)}
+    .t-tourist{background:linear-gradient(135deg,#f87171,#dc2626)}
+    .coin{background:linear-gradient(135deg,#facc15,#f59e0b); color:#1f2937}
+
+    /* status row */
+    .status{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; align-items:center}
+    .feedback{display:grid; place-items:center; height:100%; font-size:26px; font-weight:800}
+    .ok{color:var(--ok)} .bad{color:var(--bad)}
+
+    /* right column */
+    .score{display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:8px; height:100%}
+    .score .big{font-size:28px; font-weight:900; text-align:right}
+    .history{margin:0; padding:0; list-style:none; display:grid; gap:8px; overflow:auto; height:100%}
+    .tag{display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(148,163,184,.18); font-size:12px}
   </style>
 </head>
 <body>
   <div id="viewport">
     <div id="stage">
-  
-  <main><!-- Fullscreen scaling container keeping layout within phone viewport -->
-    <section class="board">
-      <header>
-        <h1>🚌 Ticket Rush</h1>
-        <div class="timer" id="timer">20 s</div>
-      </header>
-      <section class="panel" id="game"></section>
-    </section>
-    <aside class="panel sidebar">
-      <div class="status">
-        <div><span class="meta">Punkty</span><strong id="score">0</strong></div>
-        <div><span class="meta">Sprzedaże</span><strong id="round">0 / 5</strong></div>
+      <div class="app">
+        <!-- LEWA STRONA -->
+        <section class="left">
+          <header class="panel">
+            <h1>🚌 Ticket Rush</h1>
+            <div class="timer" id="timer">20 s</div>
+          </header>
+
+          <section class="panel request" id="req">
+            <div><div class="meta">Pasażer potrzebuje</div><div class="val" id="need">—</div></div>
+            <div><div class="meta">Do zapłaty</div><div class="val-big" id="pays">$0.00</div></div>
+            <div><div class="meta">Wartość biletów</div><div class="val" id="fare">$0.00</div></div>
+            <div><div class="meta">Wartość wybranych</div><div class="val" id="picked">$0.00</div></div>
+            <div><div class="meta">Twój wybór</div><div class="val" id="choice">—</div></div>
+          </section>
+
+          <section class="panel actions" id="actions">
+            <div class="tickets" id="tickets"></div>
+            <div class="coins" id="coins"></div>
+          </section>
+
+          <section class="panel status" id="status">
+            <div><div class="meta">Wydano reszty</div><div class="val" id="inserted">$0.00</div></div>
+            <div><div class="meta">Do wydania</div><div class="val" id="remain">$0.00</div></div>
+            <div><div class="meta">Zmiennych nominałów</div><div class="val" id="mix">0</div></div>
+          </section>
+        </section>
+
+        <!-- PRAWA STRONA -->
+        <aside class="right">
+          <section class="panel score">
+            <div>
+              <div class="meta">Punkty</div>
+              <div class="big" id="score">0</div>
+            </div>
+            <div>
+              <div class="meta">Sprzedaże</div>
+              <div class="big" id="round">0 / 5</div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="meta" style="margin-bottom:8px">Historia</div>
+            <ul class="history" id="history"></ul>
+          </section>
+        </aside>
       </div>
-      <div>
-        <span class="meta">Historia</span>
-        <ul class="history" id="history"></ul>
-      </div>
-    </aside>
-  </main>
     </div>
   </div>
 
   <script>
+    // ===== FIT TO SCREEN =====
+    (function() {
+      const stage = document.getElementById('stage');
+      const viewport = document.getElementById('viewport');
+      const W=1280,H=720;
+      function fit(){
+        const vw=viewport.clientWidth, vh=viewport.clientHeight;
+        const s=Math.min(vw/W, vh/H);
+        stage.style.setProperty('--fit', s);
+        stage.style.marginLeft=((vw-W*s)/2)+'px';
+        stage.style.marginTop=((vh-H*s)/2)+'px';
+      }
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', ()=>setTimeout(fit,50));
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+      new ResizeObserver(fit).observe(viewport); fit();
+    })();
+
+    // ===== GAME DATA =====
     const ticketTypes = [
-      { name: "Normal", price: 1.2, color: "linear-gradient(135deg, #4ade80, #16a34a)" },
-      { name: "Kid", price: 0.5, color: "linear-gradient(135deg, #38bdf8, #2563eb)" },
-      { name: "Luggage", price: 0.6, color: "linear-gradient(135deg, #f97316, #c2410c)" },
-      { name: "Senior", price: 0.8, color: "linear-gradient(135deg, #a855f7, #7c3aed)" },
-      { name: "Disabled", price: 0.6, color: "linear-gradient(135deg, #ec4899, #db2777)" },
-      { name: "Baby Stroller", price: 0.7, color: "linear-gradient(135deg, #14b8a6, #0f766e)" },
-      { name: "Bike", price: 0.9, color: "linear-gradient(135deg, #84cc16, #4d7c0f)" },
-      { name: "Tourist", price: 1.5, color: "linear-gradient(135deg, #f87171, #dc2626)" }
+      { name:"Normal", price:1.2, cls:"t-normal" },
+      { name:"Kid", price:0.5, cls:"t-kid" },
+      { name:"Luggage", price:0.6, cls:"t-luggage" },
+      { name:"Senior", price:0.8, cls:"t-senior" },
+      { name:"Disabled", price:0.6, cls:"t-disabled" },
+      { name:"Baby Stroller", price:0.7, cls:"t-stroller" },
+      { name:"Bike", price:0.9, cls:"t-bike" },
+      { name:"Tourist", price:1.5, cls:"t-tourist" }
     ];
+    const coins=[5,2,1,0.5,0.25,0.1,0.05,0.01];
 
-    const coins = [5, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.01];
+    // ===== UI REFS =====
+    const timerDisplay=document.getElementById("timer");
+    const scoreDisplay=document.getElementById("score");
+    const roundDisplay=document.getElementById("round");
+    const historyList=document.getElementById("history");
+    const need=document.getElementById("need");
+    const paysEl=document.getElementById("pays");
+    const fareEl=document.getElementById("fare");
+    const pickedEl=document.getElementById("picked");
+    const choiceEl=document.getElementById("choice");
+    const insertedEl=document.getElementById("inserted");
+    const remainEl=document.getElementById("remain");
+    const mixEl=document.getElementById("mix");
+    const ticketsWrap=document.getElementById("tickets");
+    const coinsWrap=document.getElementById("coins");
 
-    const gamePanel = document.getElementById("game");
-    const timerDisplay = document.getElementById("timer");
-    const scoreDisplay = document.getElementById("score");
-    const roundDisplay = document.getElementById("round");
-    const historyList = document.getElementById("history");
-
-    const TOTAL_ROUNDS = 5;
-    let currentRound = 0;
-    let score = 0;
-    let timerId = null;
-
-    const state = {
-      request: {},
-      ticketTotal: 0,
-      pays: 0,
-      selectedTickets: {},
-      coinsUsed: {},
-      inserted: 0,
-      owedVisible: false,
-      timeLeft: 20,
-      history: []
+    // ===== STATE =====
+    const TOTAL_ROUNDS=5;
+    let currentRound=0, score=0, timerId=null;
+    const state={
+      request:{}, ticketTotal:0, pays:0,
+      selectedTickets:{}, coinsUsed:{}, inserted:0,
+      timeLeft:20, history:[]
     };
 
-    function randomRequest() {
-      const result = {};
-      const uniqueTypes = Math.floor(Math.random() * 2) + 1; // 1-2 typy
-      const available = [...ticketTypes];
-      for (let i = 0; i < uniqueTypes; i++) {
-        const pickIndex = Math.floor(Math.random() * Math.min(3 + currentRound, available.length));
-        const [ticket] = available.splice(pickIndex, 1);
-        const count = Math.floor(Math.random() * 3) + 1; // 1-3 szt.
-        result[ticket.name] = count;
+    // ===== HELPERS =====
+    function rndReq(){
+      const res={}; const uniq=Math.floor(Math.random()*2)+1;
+      const pool=[...ticketTypes];
+      for(let i=0;i<uniq;i++){
+        const pickIndex=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
+        const [t]=pool.splice(pickIndex,1);
+        const cnt=Math.floor(Math.random()*3)+1;
+        res[t.name]=cnt;
       }
-      return result;
+      return res;
+    }
+    function calcFare(req){
+      return Object.entries(req).reduce((sum,[n,c])=>{
+        const t=ticketTypes.find(x=>x.name===n);
+        return sum + t.price*c;
+      },0);
+    }
+    function uniqCoins(){return Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;}
+
+    // ===== RENDER TICKETS & COINS (2x4, zawsze mieści się) =====
+    function renderActions(){
+      ticketsWrap.innerHTML = ticketTypes.map(t=>{
+        const count=state.selectedTickets[t.name]||0;
+        const need=state.request[t.name]||0;
+        const dis = need>0 && count>=need;
+        return `<button class="btn ${t.cls}" ${dis?'disabled':''}
+                  onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
+                  <div style="font-size:12px;opacity:.9">${t.name}</div>
+                  <div>$${t.price.toFixed(2)}</div>
+                  <small>${count} / ${need||0}</small>
+                </button>`;
+      }).join("");
+
+      coinsWrap.innerHTML = coins.map(v=>`
+        <button class="btn coin" onclick="insertCoin(${v})">
+          <div>$${v.toFixed(2)}</div>
+          <small>Razem: ${state.coinsUsed[v]||0}</small>
+        </button>
+      `).join("");
     }
 
-    function calculateFare(request) {
-      return Object.entries(request).reduce((total, [name, count]) => {
-        const type = ticketTypes.find((t) => t.name === name);
-        return total + type.price * count;
-      }, 0);
-    }
+    // ===== HUD =====
+    function updateHud(){
+      scoreDisplay.textContent=score;
+      roundDisplay.textContent=`${Math.min(currentRound,TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+      historyList.innerHTML=state.history.map(
+        ({round:r,success,reason,bonuses})=>`<li><strong>Runda ${r}:</strong> ${success?'✅':'❌'} ${reason}
+          ${bonuses.length?`<div>${bonuses.map(b=>`<span class="tag">${b}</span>`).join(" ")}</div>`:''}</li>`
+      ).join("");
 
-    function startRound() {
-      currentRound += 1;
-      if (currentRound > TOTAL_ROUNDS) {
-        showSummary();
-        return;
-      }
-      Object.assign(state, {
-        request: randomRequest(),
-        ticketTotal: 0,
-        pays: 0,
-        selectedTickets: {},
-        coinsUsed: {},
-        inserted: 0,
-        owedVisible: false,
-        timeLeft: 20
-      });
-
-      const fare = calculateFare(state.request);
-      state.ticketTotal = +fare.toFixed(2);
-
-      const extra = [0.5, 1, 1.5, 2, 2.5][Math.floor(Math.random() * 5)];
-      state.pays = +(fare + extra).toFixed(2);
-
-      updateHud();
-      renderBoard();
-      startTimer();
-    }
-
-    function startTimer() {
-      stopTimer();
-      timerDisplay.textContent = `${state.timeLeft} s`;
-      timerId = setInterval(() => {
-        state.timeLeft -= 1;
-        if (state.timeLeft <= 0) {
-          timerDisplay.textContent = `0 s`;
-          stopTimer();
-          finishRound(false, { reason: "Upłynął czas" });
-          return;
-        }
-        timerDisplay.textContent = `${state.timeLeft} s`;
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (timerId !== null) {
-        clearInterval(timerId);
-        timerId = null;
-      }
-    }
-
-    function finishRound(success, { reason = "", bonuses = [] } = {}) {
-      stopTimer();
-      const timeBonus = state.timeLeft > 5 ? "⏱️ Premia za czas" : null;
-      const mixBonus = uniqueCoinsUsed() < 3 && state.inserted > 0 ? "🎯 Premia za resztę" : null;
-      const appliedBonuses = bonuses.filter(Boolean);
-      if (timeBonus) appliedBonuses.push(timeBonus);
-      if (mixBonus) appliedBonuses.push(mixBonus);
-
-      if (success) {
-        score += 10 + appliedBonuses.length * 5;
-      } else {
-        score = Math.max(0, score - 5);
-      }
-
-      const summary = {
-        round: currentRound,
-        success,
-        reason: reason || (success ? "Sprzedaż ukończona" : "Błąd w sprzedaży"),
-        bonuses: appliedBonuses
-      };
-      state.history.unshift(summary);
-      state.history = state.history.slice(0, 6);
-
-      renderFeedback(summary);
-
-      if (currentRound >= TOTAL_ROUNDS) {
-        setTimeout(showSummary, 1800);
-      } else {
-        setTimeout(countdownToNext, 1800);
-      }
-    }
-
-    function uniqueCoinsUsed() {
-      return Object.keys(state.coinsUsed).filter((key) => state.coinsUsed[key] > 0).length;
-    }
-
-    function renderFeedback(summary) {
-      gamePanel.classList.remove("board-layout");
-      gamePanel.innerHTML = `
-        <div class="feedback ${summary.success ? "success" : "fail"}">
-          ${summary.success ? "🟢" : "🔴"} ${summary.reason}
-          <div class="spacer"></div>
-          ${summary.bonuses.map((b) => `<span class="tag">${b}</span>`).join(" ")}
-        </div>
-      `;
-      updateHud();
-    }
-
-    function countdownToNext() {
-      let remaining = 5;
-      gamePanel.classList.remove("board-layout");
-      gamePanel.innerHTML = `<div class="feedback">Kolejny pasażer za ${remaining}…</div>`;
-      const interval = setInterval(() => {
-        remaining -= 1;
-        if (remaining < 0) {
-          clearInterval(interval);
-          startRound();
-          return;
-        }
-        gamePanel.innerHTML = `<div class="feedback">Kolejny pasażer za ${remaining}…</div>`;
-      }, 1000);
-    }
-
-    function showSummary() {
-      gamePanel.classList.remove("board-layout");
-      gamePanel.innerHTML = `
-        <div class="summary">
-          <h2>🎉 Koniec zmiany!</h2>
-          <p class="highlight">Łączny wynik: ${score}</p>
-          <p>Świetna robota! Możesz odświeżyć stronę, aby spróbować ponownie.</p>
-        </div>
-      `;
-      updateHud();
-    }
-
-    function addTicket(name) {
-      state.selectedTickets[name] = (state.selectedTickets[name] || 0) + 1;
-      renderBoard();
-      maybeCompleteSale();
-    }
-
-    function removeTicket(name) {
-      if (!state.selectedTickets[name]) return;
-      state.selectedTickets[name] -= 1;
-      if (state.selectedTickets[name] <= 0) {
-        delete state.selectedTickets[name];
-      }
-      renderBoard();
-      maybeCompleteSale();
-    }
-
-    function insertCoin(value) {
-      const newTotal = +(state.inserted + value).toFixed(2);
-      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
-
-      if (newTotal - changeDue > 0.001) {
-        finishRound(false, { reason: "Wydano za dużo reszty" });
-        return;
-      }
-
-      state.inserted = newTotal;
-      state.owedVisible = true;
-      state.coinsUsed[value] = (state.coinsUsed[value] || 0) + 1;
-
-      renderBoard();
-
-      if (Math.abs(state.inserted - changeDue) <= 0.001 && checkTickets()) {
-        finishRound(true, { reason: "Sprzedaż poprawna" });
-      }
-    }
-
-    function maybeCompleteSale() {
-      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
-      if (checkTickets() && Math.abs(state.inserted - changeDue) <= 0.001) {
-        finishRound(true, { reason: "Sprzedaż poprawna" });
-      }
-    }
-
-    function checkTickets() {
-      const requestEntries = Object.entries(state.request);
-      if (requestEntries.length !== Object.keys(state.selectedTickets).length) {
-        return false;
-      }
-      return requestEntries.every(([name, count]) => state.selectedTickets[name] === count);
-    }
-
-    function updateHud() {
-      scoreDisplay.textContent = score;
-      roundDisplay.textContent = `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
-      historyList.innerHTML = state.history
-        .map(
-          ({ round: r, success, reason, bonuses }) => `
-            <li>
-              <strong>Runda ${r}:</strong> ${success ? "✅" : "❌"} ${reason}
-              ${bonuses.length ? `<div>${bonuses.map((b) => `<span class="tag">${b}</span>`).join(" ")}</div>` : ""}
-            </li>
-          `
-        )
-        .join("");
-    }
-
-    function renderBoard() {
-      gamePanel.classList.add("board-layout");
+      need.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+      paysEl.textContent = `$${state.pays.toFixed(2)}`;
+      fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
+      const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
+        const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0);
+      },0);
+      pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
+      choiceEl.textContent = Object.entries(state.selectedTickets).map(([n,c])=>`${c}× ${n}`).join(", ") || "—";
+      insertedEl.textContent = `$${state.inserted.toFixed(2)}`;
       const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
       const remaining = +(changeDue - state.inserted).toFixed(2);
-      const selectedValue = Object.entries(state.selectedTickets).reduce((total, [name, count]) => {
-        const type = ticketTypes.find((t) => t.name === name);
-        return total + (type ? type.price * count : 0);
-      }, 0);
-      const ticketStatus = Object.entries(state.selectedTickets)
-        .map(([name, count]) => `${count}× ${name}`)
-        .join(", ");
-
-      gamePanel.innerHTML = `
-        <div class="request">
-          <div><span class="meta">Pasażer potrzebuje</span><strong>${Object.entries(state.request)
-            .map(([name, count]) => `${count}× ${name}`)
-            .join(", ")}</strong></div>
-          <div><span class="meta">Do zapłaty</span><span class="highlight">$${state.pays.toFixed(2)}</span></div>
-          <div><span class="meta">Wartość biletów</span><strong>$${state.ticketTotal.toFixed(2)}</strong></div>
-          <div><span class="meta">Wartość wybranych</span><strong>$${selectedValue.toFixed(2)}</strong></div>
-          <div><span class="meta">Twój wybór</span><strong>${ticketStatus || "–"}</strong></div>
-        </div>
-        <div class="actions">
-          <div class="tickets">
-            ${ticketTypes
-              .map((ticket) => {
-                const count = state.selectedTickets[ticket.name] || 0;
-                const requested = state.request[ticket.name] || 0;
-                const disabled = count >= requested && requested > 0;
-                return `
-                  <button
-                    style="background:${ticket.color}"
-                    ${disabled && requested ? "disabled" : ""}
-                    onclick="addTicket('${ticket.name}')"
-                    oncontextmenu="event.preventDefault(); removeTicket('${ticket.name}');"
-                  >
-                    <span class="ticket-label">${ticket.name}</span>
-                    <span>${ticket.price.toFixed(2)} $</span>
-                    <span class="ticket-count">${count} / ${requested || 0}</span>
-                    <small class="meta">Lewy klik +1 • Prawy klik -1</small>
-                  </button>
-                `;
-              })
-              .join("")}
-          </div>
-          <div class="coins">
-            ${coins
-              .map(
-                (value) => `
-                  <button style="background: linear-gradient(135deg, #facc15, #f59e0b)" onclick="insertCoin(${value})">
-                    <span class="ticket-label">Moneta</span>
-                    <span class="ticket-count">$${value.toFixed(2)}</span>
-                    <small class="meta">Reszta: ${state.coinsUsed[value] || 0}</small>
-                  </button>
-                `
-              )
-              .join("")}
-          </div>
-        </div>
-        <div class="status">
-          <div><span class="meta">Wydano reszty</span><strong>$${state.inserted.toFixed(2)}</strong></div>
-          <div><span class="meta">Do wydania</span><strong>${state.owedVisible || changeDue === 0 ? `$${Math.max(remaining, 0).toFixed(2)}` : "?"}</strong></div>
-          <div><span class="meta">Zmiennych nominałów</span><strong>${uniqueCoinsUsed()}</strong></div>
-        </div>
-      `;
+      remainEl.textContent = `$${Math.max(remaining,0).toFixed(2)}`;
+      mixEl.textContent = uniqCoins();
     }
-    // === FIT-TO-SCREEN: skaluje scenę do rozmiaru ekranu (z zachowaniem proporcji) ===
-(function fitToScreen() {
-  const stage = document.getElementById('stage');
-  const viewport = document.getElementById('viewport');
-  const BASE_W = 1280; // jak w CSS
-  const BASE_H = 720;  // jak w CSS
 
-  function fit() {
-    const vw = viewport.clientWidth;
-    const vh = viewport.clientHeight;
-    const scale = Math.min(vw / BASE_W, vh / BASE_H);
-    stage.style.setProperty('--fit-scale', scale);
-    // wycentrowanie
-    const usedW = BASE_W * scale;
-    const usedH = BASE_H * scale;
-    stage.style.marginLeft = ((vw - usedW) / 2) + 'px';
-    stage.style.marginTop = ((vh - usedH) / 2) + 'px';
-  }
+    // ===== GAME FLOW =====
+    function startRound(){
+      currentRound+=1;
+      if(currentRound> TOTAL_ROUNDS){showSummary(); return;}
+      Object.assign(state,{
+        request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0,
+        timeLeft:20
+      });
+      state.ticketTotal=+calcFare(state.request).toFixed(2);
+      const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
+      state.pays=+(state.ticketTotal+extra).toFixed(2);
+      renderActions(); updateHud(); startTimer();
+    }
+    function startTimer(){
+      stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
+      timerId=setInterval(()=>{
+        state.timeLeft-=1;
+        if(state.timeLeft<=0){timerDisplay.textContent=`0 s`; stopTimer(); finish(false,{reason:"Upłynął czas"}); return;}
+        timerDisplay.textContent=`${state.timeLeft} s`;
+      },1000);
+    }
+    function stopTimer(){ if(timerId!==null){clearInterval(timerId); timerId=null;} }
+    function finish(ok,{reason="",bonuses=[]}={}){
+      stopTimer();
+      const timeBonus = state.timeLeft>5 ? "⏱️ Premia za czas" : null;
+      const mixBonus = uniqCoins()<3 && state.inserted>0 ? "🎯 Premia za resztę" : null;
+      if(timeBonus)bonuses.push(timeBonus); if(mixBonus)bonuses.push(mixBonus);
+      score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
+      state.history.unshift({round:currentRound, success:ok, reason: reason || (ok?"Sprzedaż poprawna":"Błąd"), bonuses});
+      state.history=state.history.slice(0,6);
+      updateHud();
+      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,1200);
+      else setTimeout(()=>startRound(),1200);
+    }
+    function showSummary(){
+      // proste info w historii wystarczy; reset gry
+      state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]});
+      updateHud();
+    }
 
-  // iOS Safari potrafi zmieniać "dvh" w trakcie – obserwujemy zmiany
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', () => setTimeout(fit, 50));
-
-  // gdy fonty/obrazy się doczytają
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(fit);
-  }
-  new ResizeObserver(fit).observe(viewport);
-  fit();
-})();
-
-
-    // Start gry
-    updateHud();
-    countdownToNext();
-  </script>
-</body>
-</html>
+    // ===== ACTIONS =====
+    window.addTicket=function(name){
+      const req=state.request[name]||0; const cur=state.selectedTickets[name]||0;
+      if(cur>=req && req>0) return;
+      state.selectedTickets[name]=(cur+1); updateHud(); checkAutoFinish();
+    }
+    window.removeTicket=function(name){
+      const cur=state.selectedTickets[name]||0; if(cur<=0) return;
+      state.selectedTickets[name]=cur-1; if(state.selectedTickets[name]<=0) delete state.selectedTickets[name];
+      updateHud(); checkAutoFinish();
+    }
+    window.insertCoin=function(v){
+      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
+      const next=+(state.inserted+v).toFixed(2);
+      if(next - changeDue > 0.001){ finish(false,{reason:"Wydano za dużo reszty"}); return; }
+      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1;
+      updateHud(); checkAutoFinish();
+    }
+    function checkAutoFinish(){
+      const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
+      const
