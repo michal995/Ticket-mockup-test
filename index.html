@@ -2,112 +2,214 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-  />
+  <meta name="viewport"
+        content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
   <title>Ticket Rush — Bus Simulator PRO</title>
   <style>
+    /* ======= Design tokens (8pt scale) ======= */
     :root{
       color-scheme: dark;
-      --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --muted:#94a3b8;
-      --ok:#4ade80; --bad:#f87171; --warn:#facc15;
+      /* Colors */
+      --bg: #0b1222;
+      --panel: rgba(17, 25, 40, 0.6);          /* frosted */
+      --panel-border: rgba(148,163,184,0.18);
+      --text: #f7fafc;
+      --muted: #9fb1c9;
+      --accent: #7dd3fc;
+      --warn: #facc15;
+      --ok: #34d399;
+      --bad: #fb7185;
+      /* Radii & shadows */
+      --r-xl: 24px; --r-lg: 20px; --r-md: 16px; --r-sm: 12px;
+      --shadow-1: 0 8px 24px rgba(0,0,0,.25);
+      --shadow-2: 0 24px 48px rgba(2,6,23,.45);
+      /* Spacing */
+      --space-1: 8px; --space-2: 12px; --space-3: 16px; --space-4: 20px; --space-5: 24px;
+      --space-6: 32px;
     }
-    *{box-sizing:border-box}
-    html{height:100dvh; -webkit-text-size-adjust:100%}
-    body{
-      margin:0; height:100dvh; overflow:hidden; touch-action: manipulation;
+
+    * { box-sizing: border-box; }
+
+    html { height: 100dvh; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Segoe UI, Inter, system-ui, sans-serif;
+      color: var(--text);
       background:
-        radial-gradient(circle at 30% -10%, rgba(56,189,248,.25), transparent 55%),
-        radial-gradient(circle at 60% 110%, rgba(74,222,128,.18), transparent 45%),
+        radial-gradient(1200px 600px at 10% -10%, rgba(125,211,252,.28), transparent 55%),
+        radial-gradient(900px 540px at 90% 110%, rgba(52,211,153,.18), transparent 45%),
         var(--bg);
-      color:var(--text);
-      font-family: Inter, Segoe UI, system-ui, sans-serif;
       padding: env(safe-area-inset-top) env(safe-area-inset-right)
                env(safe-area-inset-bottom) env(safe-area-inset-left);
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* ==== FIT TO SCREEN ==== */
-    #viewport{position:fixed; inset:0; display:grid; place-items:center}
-    #stage{
-      width:1280px; height:720px;                /* fallback */
-      transform-origin: top left;
-      transform: scale(var(--fit,1));
-      will-change: transform;
+    /* ======= Fit-to-screen stage (centred) ======= */
+    #viewport { position: fixed; inset: 0; display: grid; place-items: center; }
+    #stage {
+      /* dynamic size set in JS; fallback below */
+      width: 1280px; height: 720px;
+      transform: scale(var(--fit, 1));
+      transform-origin: center center; /* wizualne wyśrodkowanie */
+      filter: drop-shadow(var(--shadow-2));
     }
 
-    /* ==== APP FRAME ==== */
-    .app{
-      width:100%; height:100%;
-      display:grid; gap:16px; padding:16px;
-      grid-template-columns: 900px 360px;        /* lewa (gra) | prawa (wynik) */
-      background:rgba(30,41,59,.88);
-      border:1px solid rgba(148,163,184,.25);
-      border-radius:20px;
-      box-shadow:0 32px 60px rgba(15,23,42,.45);
+    /* ======= App frame / layout ======= */
+    .app {
+      width: 100%; height: 100%;
+      display: grid; gap: var(--space-3); padding: var(--space-3);
+      grid-template-columns: 860fr 380fr; /* lewa (gra) | prawa (HUD) */
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid var(--panel-border);
+      border-radius: var(--r-xl);
+      backdrop-filter: blur(14px) saturate(115%);
     }
-    .panel{
-      background:rgba(15,23,42,.74);
-      border:1px solid rgba(148,163,184,.14);
-      border-radius:16px;
-      padding:14px;
-    }
-    .left{
-      display:grid;
-      grid-template-rows: 76px 160px 428px 56px;  /* header | request | actions | status */
-      gap:12px;
-    }
-    .right{display:grid; grid-template-rows: 120px 1fr; gap:12px}
 
-    /* header */
-    header{display:flex; align-items:center; justify-content:space-between}
-    h1{margin:0; font-size:32px; letter-spacing:.02em}
-    .timer{color:var(--warn); font-weight:900; font-size:24px}
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--r-lg);
+      padding: var(--space-4);
+      backdrop-filter: blur(14px) saturate(120%);
+    }
 
-    /* request row (5 kolumn) */
-    .meta{color:var(--muted); font-size:16px; text-transform:uppercase; letter-spacing:.09em}
-    .val{font-size:18px; font-weight:700}
-    .val-big{font-size:28px; font-weight:900}
-    .request{
-      display:grid; align-content:start;
+    /* Lewa kolumna = gra */
+    .left {
+      display: grid;
+      grid-template-rows: 72px 152px 1fr 68px; /* header | request | actions | status */
+      gap: var(--space-3);
+    }
+
+    /* Prawa kolumna = wynik + historia */
+    .right {
+      display: grid; grid-template-rows: 128px 1fr; gap: var(--space-3);
+    }
+
+    /* ======= Header ======= */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-radius: var(--r-lg);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      box-shadow: var(--shadow-1) inset;
+    }
+    h1 {
+      margin: 0;
+      font-weight: 800;
+      font-size: 28px;
+      letter-spacing: .02em;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .timer {
+      font-weight: 900;
+      font-size: 22px;
+      color: var(--warn);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(250,204,21,.12);
+      border: 1px solid rgba(250,204,21,.25);
+    }
+
+    /* ======= Request (karty statusu) ======= */
+    .request {
+      display: grid; align-content: start;
       grid-template-columns: repeat(5, 1fr);
-      column-gap:12px; row-gap:8px;
+      gap: var(--space-3);
     }
+    .stat {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid var(--panel-border);
+      border-radius: var(--r-md);
+      padding: var(--space-3);
+      display: grid; gap: 6px;
+    }
+    .label { color: var(--muted); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+    .value { font-size: 18px; font-weight: 700; }
+    .value.big { font-size: 26px; font-weight: 900; }
 
-    /* actions: 2 kolumny (bilety | monety) */
-    .actions{display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%}
-    .tickets,.coins{
-      display:grid; gap:12px; height:100%;
-      grid-template-rows: 1fr 1fr; grid-template-columns: repeat(4, 1fr);
+    /* ======= Actions: bilety + monety ======= */
+    .actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);
     }
-    .btn{
-      border:0; border-radius:14px; color:#fff;
-      cursor:pointer; display:grid; place-items:center; text-align:center;
-      height:100%; padding:10px; line-height:1.12;
-      font-weight:800; font-size:20px;          /* >=16px => iOS nie zoomuje */
+    .grid {
+      display: grid; gap: var(--space-3);
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      align-items: stretch;
+    }
+    .btn {
+      display: grid; place-items: center; text-align: center;
+      border: 0; border-radius: var(--r-md);
+      padding: 10px; height: 100%;
+      color: #fff; cursor: pointer; user-select: none;
+      font-weight: 800; font-size: 18px; line-height: 1.12;
+      box-shadow: 0 10px 20px rgba(0,0,0,.22), inset 0 -2px 0 rgba(255,255,255,.18);
+      transition: transform .08s ease, box-shadow .12s ease, filter .12s ease, opacity .2s ease;
       touch-action: manipulation;
     }
-    .btn small{font-weight:700; font-size:16px; opacity:.9}
-    .btn:disabled{opacity:.5; cursor:not-allowed}
+    .btn:active { transform: translateY(1px) scale(.99); filter: brightness(.98); box-shadow: 0 6px 14px rgba(0,0,0,.28); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn .sub { font-size: 15px; font-weight: 700; opacity: .95; }
+    .chip {
+      margin-top: 6px;
+      font-size: 14px; font-weight: 700; opacity: .9;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.22);
+      padding: 4px 10px; border-radius: 999px;
+    }
 
-    /* kolorystyka kafelków */
-    .t-normal{background:linear-gradient(135deg,#4ade80,#16a34a)}
-    .t-kid{background:linear-gradient(135deg,#38bdf8,#2563eb)}
-    .t-luggage{background:linear-gradient(135deg,#f97316,#c2410c)}
-    .t-senior{background:linear-gradient(135deg,#a855f7,#7c3aed)}
-    .t-disabled{background:linear-gradient(135deg,#ec4899,#db2777)}
-    .t-stroller{background:linear-gradient(135deg,#14b8a6,#0f766e)}
-    .t-bike{background:linear-gradient(135deg,#84cc16,#4d7c0f)}
-    .t-tourist{background:linear-gradient(135deg,#f87171,#dc2626)}
-    .coin{background:linear-gradient(135deg,#facc15,#f59e0b); color:#1f2937}
+    /* Ticket palettes */
+    .t-normal  { background: linear-gradient(135deg,#34d399,#059669); }
+    .t-kid     { background: linear-gradient(135deg,#60a5fa,#2563eb); }
+    .t-luggage { background: linear-gradient(135deg,#fb923c,#c2410c); }
+    .t-senior  { background: linear-gradient(135deg,#a78bfa,#7c3aed); }
+    .t-disabled{ background: linear-gradient(135deg,#f472b6,#be185d); }
+    .t-stroller{ background: linear-gradient(135deg,#2dd4bf,#0f766e); }
+    .t-bike    { background: linear-gradient(135deg,#a3e635,#4d7c0f); }
+    .t-tourist { background: linear-gradient(135deg,#f87171,#dc2626); }
 
-    /* status & right */
-    .status{display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; align-items:center}
-    .history{margin:0; padding:0; list-style:none; display:grid; gap:10px; overflow:auto; height:100%}
-    .tag{display:inline-block; padding:6px 12px; border-radius:999px; background:rgba(148,163,184,.18); font-size:14px}
-    .score{display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:center}
-    .big{font-size:28px; font-weight:900; text-align:right}
+    .coin      { background: linear-gradient(135deg,#fde047,#f59e0b); color: #1f2937; }
+
+    /* ======= Status (dół) ======= */
+    .status {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-3);
+    }
+    .status .stat { align-items: center; grid-auto-rows: min-content; }
+
+    /* ======= Right column (score/history) ======= */
+    .score {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);
+      align-items: center;
+    }
+    .kpi {
+      display: grid; gap: 6px; padding: var(--space-3);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid var(--panel-border);
+      border-radius: var(--r-md);
+    }
+    .kpi .big { font-size: 28px; font-weight: 900; text-align: right; }
+    .history {
+      display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; height: 100%; overflow: auto;
+    }
+    .row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: var(--r-sm);
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid var(--panel-border);
+    }
+    .badge {
+      font-size: 13px; font-weight: 700;
+      padding: 4px 8px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+    }
+
+    /* ======= Accessibility: focus without brzydkiej obwódki ======= */
+    .btn:focus-visible { outline: 3px solid rgba(125,211,252,.7); outline-offset: 2px; }
+
   </style>
 </head>
 <body>
@@ -121,34 +223,34 @@
             <div class="timer" id="timer">20 s</div>
           </header>
 
-          <section class="panel request">
-            <div><div class="meta">Pasażer potrzebuje</div><div class="val" id="need">—</div></div>
-            <div><div class="meta">Do zapłaty</div><div class="val-big" id="pays">$0.00</div></div>
-            <div><div class="meta">Wartość biletów</div><div class="val" id="fare">$0.00</div></div>
-            <div><div class="meta">Wartość wybranych</div><div class="val" id="picked">$0.00</div></div>
-            <div><div class="meta">Twój wybór</div><div class="val" id="choice">—</div></div>
+          <section class="request">
+            <div class="stat"><div class="label">Pasażer potrzebuje</div><div class="value" id="need">—</div></div>
+            <div class="stat"><div class="label">Do zapłaty</div><div class="value big" id="pays">$0.00</div></div>
+            <div class="stat"><div class="label">Wartość biletów</div><div class="value" id="fare">$0.00</div></div>
+            <div class="stat"><div class="label">Wartość wybranych</div><div class="value" id="picked">$0.00</div></div>
+            <div class="stat"><div class="label">Twój wybór</div><div class="value" id="choice">—</div></div>
           </section>
 
-          <section class="panel actions">
-            <div class="tickets" id="tickets"></div>
-            <div class="coins" id="coins"></div>
+          <section class="actions">
+            <div class="panel grid" id="tickets"></div>
+            <div class="panel grid" id="coins"></div>
           </section>
 
-          <section class="panel status">
-            <div><div class="meta">Wydano reszty</div><div class="val" id="inserted">$0.00</div></div>
-            <div><div class="meta">Do wydania</div><div class="val" id="remain">$0.00</div></div>
-            <div><div class="meta">Zmiennych nominałów</div><div class="val" id="mix">0</div></div>
+          <section class="status">
+            <div class="stat"><div class="label">Wydano reszty</div><div class="value" id="inserted">$0.00</div></div>
+            <div class="stat"><div class="label">Do wydania</div><div class="value" id="remain">$0.00</div></div>
+            <div class="stat"><div class="label">Zmiennych nominałów</div><div class="value" id="mix">0</div></div>
           </section>
         </section>
 
         <!-- PRAWA: wynik + historia -->
         <aside class="right">
           <section class="panel score">
-            <div><div class="meta">Punkty</div><div class="big" id="score">0</div></div>
-            <div><div class="meta">Sprzedaże</div><div class="big" id="round">0 / 5</div></div>
+            <div class="kpi"><div class="label">Punkty</div><div class="big" id="score">0</div></div>
+            <div class="kpi"><div class="label">Sprzedaże</div><div class="big" id="round">0 / 5</div></div>
           </section>
-          <section class="panel">
-            <div class="meta" style="margin-bottom:8px">Historia</div>
+          <section class="panel" style="display:grid; grid-template-rows:auto 1fr; gap:12px">
+            <div class="label">Historia</div>
             <ul class="history" id="history"></ul>
           </section>
         </aside>
@@ -157,33 +259,28 @@
   </div>
 
   <script>
-    /* ==== iOS: zbijamy double-tap/pinch zoom, żeby widok się nie rozjeżdżał ==== */
-    (function preventIOSZoom(){
-      let last = 0;
-      document.addEventListener('touchend', function(e){
-        const now = Date.now();
-        if (now - last < 350) { e.preventDefault(); }
-        last = now;
-      }, { passive:false });
-      document.addEventListener('gesturestart', e=>e.preventDefault(), { passive:false });
+    /* ===== iOS: blokada niechcianego zooma (double-tap/pinch) ===== */
+    (function(){
+      let last=0;
+      document.addEventListener('touchend',e=>{
+        const now=Date.now(); if(now-last<350){ e.preventDefault(); } last=now;
+      },{passive:false});
+      document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
     })();
 
-    /* ==== FIT-TO-SCREEN: scena = pełny ekran w landscape, bez marginesów ==== */
-    (function() {
+    /* ===== Dynamiczny, WYŚRODKOWANY fullscreen =====
+       - Wysokość sceny trzymamy stałą (720), szerokość liczymy z proporcji ekranu.
+       - Skala liczona tak, by scena *dokładnie* domknęła ekran w landscape.
+    */
+    (function fit(){
       const stage = document.getElementById('stage');
       const viewport = document.getElementById('viewport');
-
-      // bazowa wysokość sceny – stała (ułatwia czytelność), szerokość liczymy z proporcji ekranu
       const BASE_H = 720;
 
-      function fit(){
-        const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
-        const vw = vv.width;
-        const vh = vv.height;
-        const ratio = vw / vh;
-
-        // dynamiczna szerokość: dokładnie BASE_H * (szer/wys urządzenia)
-        const baseW = Math.round(BASE_H * ratio);
+      function doFit(){
+        const vv = window.visualViewport || { width: innerWidth, height: innerHeight };
+        const vw = vv.width, vh = vv.height, ratio = vw / vh;
+        const baseW = Math.max(1024, Math.round(BASE_H * ratio));   // adaptacja do urządzenia
 
         stage.style.width  = baseW + 'px';
         stage.style.height = BASE_H + 'px';
@@ -191,20 +288,16 @@
         const scale = Math.min(vw / baseW, vh / BASE_H);
         stage.style.setProperty('--fit', scale);
 
-        const usedW = baseW * scale;
-        const usedH = BASE_H * scale;
-        stage.style.marginLeft = ((vw - usedW) / 2) + 'px';
-        stage.style.marginTop  = ((vh - usedH) / 2) + 'px';
+        // Wyśrodkowanie sceny w obu osiach (bo transform-origin: center)
       }
-
-      window.addEventListener('resize', fit);
-      window.addEventListener('orientationchange', ()=>setTimeout(fit,50));
-      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
-      new ResizeObserver(fit).observe(viewport);
-      fit();
+      window.addEventListener('resize', doFit);
+      window.addEventListener('orientationchange', ()=>setTimeout(doFit, 60));
+      if (document.fonts?.ready) document.fonts.ready.then(doFit);
+      new ResizeObserver(doFit).observe(viewport);
+      doFit();
     })();
 
-    /* ==== LOGIKA GRY ==== */
+    /* ===== Dane gry (bez zmian logiki) ===== */
     const ticketTypes = [
       { name:"Normal", price:1.2, cls:"t-normal" },
       { name:"Kid", price:0.5, cls:"t-kid" },
@@ -217,23 +310,14 @@
     ];
     const coins=[5,2,1,0.5,0.25,0.1,0.05,0.01];
 
-    // UI refs
-    const timerDisplay=document.getElementById("timer");
-    const scoreDisplay=document.getElementById("score");
-    const roundDisplay=document.getElementById("round");
-    const historyList=document.getElementById("history");
-    const needEl=document.getElementById("need");
-    const paysEl=document.getElementById("pays");
-    const fareEl=document.getElementById("fare");
-    const pickedEl=document.getElementById("picked");
-    const choiceEl=document.getElementById("choice");
-    const insertedEl=document.getElementById("inserted");
-    const remainEl=document.getElementById("remain");
-    const mixEl=document.getElementById("mix");
-    const ticketsWrap=document.getElementById("tickets");
-    const coinsWrap=document.getElementById("coins");
+    /* ===== UI refs ===== */
+    const $ = (id)=>document.getElementById(id);
+    const timerDisplay=$("timer"), scoreDisplay=$("score"), roundDisplay=$("round"), historyList=$("history");
+    const needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"), pickedEl=$("picked"), choiceEl=$("choice");
+    const insertedEl=$("inserted"), remainEl=$("remain"), mixEl=$("mix");
+    const ticketsWrap=$("tickets"), coinsWrap=$("coins");
 
-    // State
+    /* ===== State ===== */
     const TOTAL_ROUNDS=5;
     let currentRound=0, score=0, timerId=null;
     const state={
@@ -242,27 +326,23 @@
       timeLeft:20, history:[]
     };
 
-    // Helpers
+    /* ===== Helpers ===== */
     function rndReq(){
-      const res={}; const uniq=Math.floor(Math.random()*2)+1;
+      const out={}; const uniq=Math.floor(Math.random()*2)+1;
       const pool=[...ticketTypes];
       for(let i=0;i<uniq;i++){
-        const pickIndex=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
-        const [t]=pool.splice(pickIndex,1);
-        const cnt=Math.floor(Math.random()*3)+1;
-        res[t.name]=cnt;
+        const pick=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
+        const [t]=pool.splice(pick,1); const cnt=Math.floor(Math.random()*3)+1;
+        out[t.name]=cnt;
       }
-      return res;
+      return out;
     }
-    function calcFare(req){
-      return Object.entries(req).reduce((sum,[n,c])=>{
-        const t=ticketTypes.find(x=>x.name===n);
-        return sum + t.price*c;
-      },0);
-    }
-    function uniqCoins(){return Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;}
+    const calcFare = (req)=>Object.entries(req).reduce((s,[n,c])=>{
+      const t=ticketTypes.find(x=>x.name===n); return s + (t?t.price*c:0);
+    },0);
+    const uniqCoins=()=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
 
-    // Render actions (2x4)
+    /* ===== Render: bilety i monety (duże, dotykowe, Apple-like) ===== */
     function renderActions(){
       ticketsWrap.innerHTML = ticketTypes.map(t=>{
         const count=state.selectedTickets[t.name]||0;
@@ -270,37 +350,43 @@
         const disabled = need>0 && count>=need;
         return `<button class="btn ${t.cls}" ${disabled?'disabled':''}
                   onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
-                  <div>${t.name}</div>
+                  <div class="sub">${t.name}</div>
                   <div>$${t.price.toFixed(2)}</div>
-                  <small>${count} / ${need||0}</small>
+                  <div class="chip">${count} / ${need||0}</div>
                 </button>`;
       }).join("");
 
       coinsWrap.innerHTML = coins.map(v=>`
         <button class="btn coin" onclick="insertCoin(${v})">
+          <div class="sub">Moneta</div>
           <div>$${v.toFixed(2)}</div>
-          <small>×${(state.coinsUsed[v]||0)}</small>
+          <div class="chip">×${state.coinsUsed[v]||0}</div>
         </button>
       `).join("");
     }
 
-    // HUD
+    /* ===== HUD ===== */
     function updateHud(){
       scoreDisplay.textContent=score;
       roundDisplay.textContent=`${Math.min(currentRound,TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
       historyList.innerHTML=state.history.map(
-        ({round:r,success,reason,bonuses})=>`<li><strong>Runda ${r}:</strong> ${success?'✅':'❌'} ${reason}
-          ${bonuses.length?`<div>${bonuses.map(b=>`<span class="tag">${b}</span>`).join(" ")}</div>`:''}</li>`
+        ({round:r,success,reason,bonuses})=>`
+          <li class="row">
+            <span><strong>Runda ${r}</strong> ${success?'✅':'❌'} ${reason}</span>
+            ${bonuses.length?`<span class="badge">${bonuses.join(' • ')}</span>`:''}
+          </li>`
       ).join("");
 
       needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
       paysEl.textContent = `$${state.pays.toFixed(2)}`;
       fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
+
       const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
         const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0);
       },0);
       pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
       choiceEl.textContent = Object.entries(state.selectedTickets).map(([n,c])=>`${c}× ${n}`).join(", ") || "—";
+
       insertedEl.textContent = `$${state.inserted.toFixed(2)}`;
       const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
       const remaining = +(changeDue - state.inserted).toFixed(2);
@@ -308,13 +394,12 @@
       mixEl.textContent = uniqCoins();
     }
 
-    // Flow
+    /* ===== Flow (bez zmian logiki) ===== */
     function startRound(){
       currentRound+=1;
       if(currentRound> TOTAL_ROUNDS){showSummary(); return;}
       Object.assign(state,{
-        request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0,
-        timeLeft:20
+        request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0, timeLeft:20
       });
       state.ticketTotal=+calcFare(state.request).toFixed(2);
       const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
@@ -325,29 +410,28 @@
       stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
       timerId=setInterval(()=>{
         state.timeLeft-=1;
-        if(state.timeLeft<=0){timerDisplay.textContent=`0 s`; stopTimer(); finish(false,{reason:"Upłynął czas"}); return;}
+        if(state.timeLeft<=0){ timerDisplay.textContent=`0 s`; stopTimer(); finish(false,{reason:"Upłynął czas"}); return; }
         timerDisplay.textContent=`${state.timeLeft} s`;
       },1000);
     }
     function stopTimer(){ if(timerId!==null){clearInterval(timerId); timerId=null;} }
     function finish(ok,{reason="",bonuses=[]}={}){
       stopTimer();
-      const timeBonus = state.timeLeft>5 ? "⏱️ Premia za czas" : null;
-      const mixBonus = uniqCoins()<3 && state.inserted>0 ? "🎯 Premia za resztę" : null;
+      const timeBonus = state.timeLeft>5 ? "Premia za czas" : null;
+      const mixBonus = uniqCoins()<3 && state.inserted>0 ? "Premia za resztę" : null;
       if(timeBonus)bonuses.push(timeBonus); if(mixBonus)bonuses.push(mixBonus);
       score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
       state.history.unshift({round:currentRound, success:ok, reason: reason || (ok?"Sprzedaż poprawna":"Błąd"), bonuses});
       state.history=state.history.slice(0,6);
       updateHud();
-      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,900);
-      else setTimeout(()=>startRound(),900);
+      if(currentRound>=TOTAL_ROUNDS) setTimeout(showSummary,800); else setTimeout(()=>startRound(),800);
     }
     function showSummary(){
       state.history.unshift({round:"—", success:true, reason:`Koniec zmiany! Wynik: ${score}`, bonuses:[]});
       updateHud();
     }
 
-    // Actions
+    /* ===== Actions ===== */
     window.addTicket=function(name){
       const req=state.request[name]||0; const cur=state.selectedTickets[name]||0;
       if(cur>=req && req>0) return;
@@ -362,18 +446,17 @@
       const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
       const next=+(state.inserted+v).toFixed(2);
       if(next - changeDue > 0.001){ finish(false,{reason:"Wydano za dużo reszty"}); return; }
-      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1;
-      updateHud(); checkAutoFinish();
+      state.inserted=next; state.coinsUsed[v]=(state.coinsUsed[v]||0)+1; updateHud(); checkAutoFinish();
     }
     function checkAutoFinish(){
       const changeDue=+(state.pays - state.ticketTotal).toFixed(2);
       const goodMoney=Math.abs(state.inserted - changeDue)<=0.001;
       const goodTickets=Object.entries(state.request).every(([n,c])=> (state.selectedTickets[n]||0)===c)
-                          && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
+                        && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
       if(goodMoney && goodTickets) finish(true,{reason:"Sprzedaż poprawna"});
     }
 
-    // Start
+    /* Start */
     updateHud(); startRound();
   </script>
 </body>
