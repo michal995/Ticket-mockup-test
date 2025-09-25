@@ -5,27 +5,26 @@
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Ticket Rush — PRO</title>
 
-<!-- iOS PWA: fullscreen po “Dodaj do ekranu domowego” -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 <style>
 :root{
   color-scheme: dark;
-  /* Paleta: ciemno, wysoki kontrast + żółty akcent */
-  --bg:#0c111a; --card:#0f1623; --panel:#0a121f; --border:#263042;
-  --text:#f5f7fb; --muted:#aab6cb; --accent:#ffd22e;
-  --ok:#34d399; --bad:#ff4d4d;
-  --coin:#ffd22e; --coinText:#1f2838;
+  --bg:#0b1018; --panel:#0e1522; --panel2:#0a111c; --border:#223047;
+  --text:#f3f7ff; --muted:#9fb0c9; --accent:#ffd54a;
+  --ok:#35d08a; --bad:#ff5555;
+  --coin:#ffd54a; --coinText:#1a2232; --bill1:#d6f0c9; --bill2:#b8e3aa;
 
-  /* Duże UI pod kciuk */
-  --baseH: 860px;   /* zwiększ na 900–960 jeśli chcesz jeszcze większe kafle */
-  --safePad: 8px;
+  /* DUŻE UI */
+  --baseH: 960px;          /* podbij do 1000–1040 jeśli chcesz jeszcze większe */
+  --safe: 10px;
 
-  --r-xl:22px; --r-lg:18px; --r-md:14px; --r-sm:10px;
-  --gap:16px; --pad:18px;
+  --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --gap:18px; --pad:20px;
 
-  --h1:40px; --h2:28px; --h3:22px; --meta:16px; --tile:24px; --chip:16px;
+  --h1:44px; --h2:30px; --h3:22px; --meta:17px;
+  --tile:26px; --chip:18px;
 }
 
 *{box-sizing:border-box}
@@ -35,129 +34,139 @@ body{
   font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
   color:var(--text);
   background:
-    radial-gradient(1100px 600px at 12% -10%, rgba(255,210,46,.12), transparent 55%),
-    linear-gradient(#0a0f1a, #0c111a);
+    radial-gradient(1200px 650px at 15% -10%, rgba(255,213,74,.12), transparent 60%),
+    linear-gradient(#0a0f17,#0b1018);
   padding:
-    calc(env(safe-area-inset-top) + var(--safePad))
-    calc(env(safe-area-inset-right) + var(--safePad))
-    calc(env(safe-area-inset-bottom) + var(--safePad))
-    calc(env(safe-area-inset-left) + var(--safePad));
+    calc(env(safe-area-inset-top) + var(--safe))
+    calc(env(safe-area-inset-right) + var(--safe))
+    calc(env(safe-area-inset-bottom) + var(--safe))
+    calc(env(safe-area-inset-left) + var(--safe));
   -webkit-tap-highlight-color:transparent;
 }
 
-/* STAGE: idealne centrowanie + skala */
+/* STAGE: centrowanie + skala; wewnętrzny “pas bezpieczeństwa” */
 #viewport{position:fixed; inset:0; overflow:hidden}
 #stage{
   position:absolute; top:50%; left:50%;
   width:calc(var(--baseH) * (16/9)); height:var(--baseH);
-  transform:translate(-50%,-50%) scale(var(--fit,1)); transform-origin:center;
-  filter: drop-shadow(0 18px 48px rgba(0,0,0,.42));
+  transform:translate(-50%,-50%) scale(var(--fit,1));
+  transform-origin:center;
+  filter: drop-shadow(0 22px 50px rgba(0,0,0,.44));
 }
 
-/* ===== Nowy układ: jedna karta gry ===== */
+/* APLIKACJA — jedna karta, układ arcade */
 .app{
   width:100%; height:100%;
-  display:grid; grid-template-rows: 74px 1fr 160px; gap:var(--gap);
-  background:var(--card); border:1px solid var(--border); border-radius:var(--r-xl);
-  padding:var(--gap);
+  display:grid; grid-template-rows: 84px 120px 1fr 200px 150px;
+  gap:var(--gap);
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding: calc(var(--gap) + 6px);
 }
 
-/* Pasek nagłówka */
-.header{
-  display:grid; grid-template-columns: 1fr auto auto; gap:var(--gap); align-items:center;
-}
-.brand{display:flex; align-items:center; gap:12px; font-weight:900; font-size:var(--h1); letter-spacing:.02em}
-.badge{background:var(--accent); color:#0e1015; border-radius:999px; padding:6px 10px; font-weight:900}
-.timer{font-weight:900; font-size:var(--h2); background:var(--accent); color:#0e1015;
-       padding:8px 14px; border-radius:12px}
+/* HEADER */
+.header{display:grid; grid-template-columns: 1fr auto auto; gap:var(--gap); align-items:center}
+.brand{display:flex; align-items:center; gap:14px; font-weight:900; font-size:var(--h1); letter-spacing:.02em}
+.badge{background:var(--accent); color:#0c0f14; border-radius:999px; padding:6px 14px; font-weight:900}
+.timer{font-weight:900; font-size:var(--h2); background:var(--accent); color:#0c0f14; padding:10px 16px; border-radius:14px}
 
-/* Strefa gry (jedna karta, w środku cała interakcja) */
-.board{
-  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg);
-  padding:var(--pad); display:grid; grid-template-rows: 96px 1fr; gap:var(--gap);
-}
-
-/* Pasek statusów */
-.hud{
-  display:grid; grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1fr; gap:var(--gap);
-}
+/* HUD */
+.hud{display:grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap:var(--gap)}
 .card{
-  background:#0a121f; border:1px solid var(--border); border-radius:var(--r-md);
-  padding:var(--pad); display:grid; gap:6px;
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:var(--pad); display:grid; gap:8px;
 }
 .meta{color:var(--muted); font-size:var(--meta); letter-spacing:.08em; text-transform:uppercase}
 .big{font-size:var(--h2); font-weight:900}
 
-/* Główna scena: lewa – bilety; prawa – monety + “reszta” (ukryta do 1. monety) */
-.scene{
-  display:grid; grid-template-columns: 1.25fr .95fr; gap:var(--gap);
+/* TICKETS area */
+.tickets{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--pad);
+  display:grid; grid-template-rows: 46px 1fr; gap:var(--gap);
+}
+.tbar{display:flex; align-items:center; justify-content:space-between}
+.clear{border:1px solid var(--border); background:#0f1828; color:#eaf1ff; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer}
+.gridTickets{
+  display:grid; gap:var(--gap);
+  grid-template-columns:repeat(3,1fr);   /* 3 szerokie kolumny = duże kafle */
+  grid-auto-rows:minmax(120px,1fr);
 }
 
-/* Bilety */
-.tickets{
-  background:#0a121f; border:1px solid var(--border); border-radius:var(--r-md); padding:var(--pad);
-  display:grid; grid-template-rows: 44px 1fr auto; gap:var(--gap);
-}
-.tickets .bar{display:flex; align-items:center; justify-content:space-between}
-.actions-left{display:flex; gap:10px}
-.clear{border:1px solid var(--border); background:#0e1624; color:#e6eefc; border-radius:12px; padding:8px 12px; font-weight:800; cursor:pointer}
-.gridTickets{display:grid; gap:var(--gap); grid-template-columns:repeat(4,1fr); grid-auto-rows:minmax(92px,1fr)}
+/* Kafle biletów */
 .btn{
+  position:relative;
   display:grid; place-items:center; text-align:center; cursor:pointer; user-select:none;
-  height:100%; border:0; border-radius:16px; color:#fff; padding:12px;
+  height:100%;
+  border:0; border-radius:20px; color:#fff; padding:14px;
   font-weight:900; font-size:var(--tile); line-height:1.1;
-  box-shadow: inset 0 -2px 0 rgba(255,255,255,.22), 0 10px 24px rgba(0,0,0,.28);
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.20), 0 12px 26px rgba(0,0,0,.32);
   transition:transform .06s ease, filter .12s ease, opacity .2s ease;
 }
 .btn:active{transform:translateY(1px) scale(.99)}
-.btn:disabled{opacity:.45; cursor:not-allowed}
-.sub{font-size:18px; font-weight:800; opacity:.95}
-
-/* bąbelek z licznikiem wybranych */
+.btn:disabled{opacity:.42; cursor:not-allowed}
+.sub{font-size:20px; font-weight:800; opacity:.97}
 .bubble{
-  position:absolute; top:8px; right:8px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.35);
-  padding:3px 8px; border-radius:999px; font-size:var(--chip); font-weight:900
+  position:absolute; top:10px; right:10px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.35);
+  padding:4px 10px; border-radius:999px; font-size:var(--chip); font-weight:900
 }
-.tile{position:relative}
 
-/* kolory biletów – jednolite, czytelne */
-.t-normal  {background:linear-gradient(135deg,#21c07a,#139e63)}
-.t-kid     {background:linear-gradient(135deg,#3fa1ff,#2678ff)}
-.t-luggage {background:linear-gradient(135deg,#ff9855,#ff7d2d)}
-.t-senior  {background:linear-gradient(135deg,#b48dff,#8b6cff)}
-.t-disabled{background:linear-gradient(135deg,#ff6b9b,#e4477f)}
-.t-stroller{background:linear-gradient(135deg,#41dcdc,#22b7b7)}
-.t-bike    {background:linear-gradient(135deg,#9fe24a,#7fcb2b)}
-.t-tourist {background:linear-gradient(135deg,#ff6d63,#ff5348)}
+/* czytelne, nasycone kolory (bez cukru) */
+.t-normal  {background:linear-gradient(140deg,#22c07a,#139a61)}
+.t-kid     {background:linear-gradient(140deg,#4aa7ff,#2c7cff)}
+.t-luggage {background:linear-gradient(140deg,#ff9650,#ff7828)}
+.t-senior  {background:linear-gradient(140deg,#b995ff,#8a6eff)}
+.t-disabled{background:linear-gradient(140deg,#ff6e9e,#e34a82)}
+.t-stroller{background:linear-gradient(140deg,#42dede,#23bbbb)}
+.t-bike    {background:linear-gradient(140deg,#a2e65a,#82cf35)}
+.t-tourist {background:linear-gradient(140deg,#ff7167,#ff5348)}
 
-/* Monety + reszta */
+/* PAYMENT */
 .pay{
-  background:#0a121f; border:1px solid var(--border); border-radius:var(--r-md); padding:var(--pad);
-  display:grid; grid-template-rows: 44px 1fr; gap:var(--gap);
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--pad);
+  display:grid; grid-template-rows: 46px 1fr; gap:var(--gap);
 }
-.gridCoins{display:grid; gap:var(--gap); grid-template-columns:repeat(4,1fr); grid-auto-rows:minmax(92px,1fr)}
-.coin{background:linear-gradient(135deg,#ffe578,var(--coin)); color:var(--coinText)}
-.bill{background:linear-gradient(180deg,#d7f0c7,#b7e4a8); color:#102f1a}
+.pbar{display:flex; align-items:center; justify-content:space-between}
+.remain{
+  font-weight:900; font-size:var(--h2); padding:10px 14px; border-radius:14px;
+  background:#0f1828; border:1px solid var(--border); min-width:150px; text-align:center;
+}
+.gridCoins{
+  display:grid; gap:var(--gap);
+  grid-template-columns:repeat(5,1fr); grid-auto-rows:minmax(110px,1fr);
+}
 
-/* Pasek dołu: historia + komunikaty */
-.footer{
-  background:#0a121f; border:1px solid var(--border); border-radius:var(--r-lg);
-  padding:var(--pad); display:grid; grid-template-columns: 1fr; gap:12px;
+/* monety i banknot – wyraźnie inne */
+.coin{
+  border-radius:999px; color:var(--coinText);
+  background:radial-gradient(circle at 30% 25%, #fff5b5 0%, var(--coin) 55%, #f0c63d 100%);
+  border:3px solid #e8bf39;
 }
-.list{display:grid; gap:12px; grid-auto-rows:minmax(44px,auto); max-height:140px; overflow:auto}
+.bill{
+  border-radius:16px; color:#10311d;
+  background:linear-gradient(180deg,var(--bill1),var(--bill2));
+  border:3px solid #9fce8c;
+}
+
+/* HISTORIA */
+.footer{
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:var(--pad); display:grid; grid-template-rows: 22px 1fr; gap:12px;
+}
+.list{display:grid; gap:12px; grid-auto-rows:minmax(48px,auto); overflow:auto}
 .item{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px;
       background:#0b1220; border:1px solid var(--border)}
 .badge{font-weight:900; padding:6px 10px; border-radius:999px; border:1px solid #2a3346; color:#d9e3f3}
 
-/* Overlay rundy */
+/* OVERLAY */
 .overlay{
-  position:absolute; inset:0; display:none; place-items:center; background:rgba(10,15,25,.72);
-  backdrop-filter: blur(6px);
+  position:absolute; inset:0; display:none; place-items:center; background:rgba(8,12,20,.70);
+  backdrop-filter: blur(6px); z-index:20;
 }
 .overlay.show{display:grid}
-.overlay .box{background:#0b1220; border:1px solid var(--border); border-radius:18px; padding:28px 32px; text-align:center}
-.overlay .title{font-size:36px; font-weight:900; margin-bottom:10px}
-.overlay .count{font-size:28px; font-weight:900; color:var(--accent)}
+.overlay .box{background:#0b1220; border:1px solid var(--border); border-radius:20px; padding:32px 38px; text-align:center}
+.overlay .title{font-size:38px; font-weight:900; margin-bottom:12px}
+.overlay .count{font-size:32px; font-weight:900; color:var(--accent)}
 </style>
 </head>
 <body>
@@ -171,53 +180,43 @@ body{
           <div class="timer" id="timer">20 s</div>
         </div>
 
-        <!-- BOARD -->
-        <div class="board">
-          <!-- HUD -->
-          <div class="hud">
-            <div class="card">
-              <div class="meta">Passenger needs</div>
-              <div class="big" id="need">—</div>
-            </div>
-            <div class="card"><div class="meta">To pay</div><div class="big" id="pays">$0.00</div></div>
-            <div class="card"><div class="meta">Tickets value</div><div class="big" id="fare">$0.00</div></div>
-            <div class="card"><div class="meta">Selected value</div><div class="big" id="picked">$0.00</div></div>
-            <div class="card"><div class="meta">Sales</div><div class="big" id="round">0 / 5</div></div>
+        <!-- HUD -->
+        <div class="hud">
+          <div class="card">
+            <div class="meta">Passenger needs</div>
+            <div class="big" id="need">—</div>
           </div>
-
-          <!-- SCENE -->
-          <div class="scene">
-            <!-- TICKETS -->
-            <section class="tickets">
-              <div class="bar">
-                <div class="meta">Tickets</div>
-                <div class="actions-left">
-                  <button class="clear" id="clearTickets">Clear</button>
-                </div>
-              </div>
-              <div class="gridTickets" id="tickets"></div>
-              <div class="meta">Tip: long-press / right click to −1</div>
-            </section>
-
-            <!-- PAY / CHANGE -->
-            <section class="pay">
-              <div class="bar" style="display:flex; align-items:center; justify-content:space-between">
-                <div class="meta">Change</div>
-                <div class="big" id="remain">$?</div>
-              </div>
-              <div class="gridCoins" id="coins"></div>
-            </section>
-          </div>
+          <div class="card"><div class="meta">To pay</div><div class="big" id="pays">$0.00</div></div>
+          <div class="card"><div class="meta">Tickets value</div><div class="big" id="fare">$0.00</div></div>
+          <div class="card"><div class="meta">Selected value</div><div class="big" id="picked">$0.00</div></div>
         </div>
 
-        <!-- FOOTER: HISTORY -->
+        <!-- TICKETS -->
+        <section class="tickets">
+          <div class="tbar">
+            <div class="meta">Tickets</div>
+            <button class="clear" id="clearTickets">Clear</button>
+          </div>
+          <div class="gridTickets" id="tickets"></div>
+        </section>
+
+        <!-- PAYMENT -->
+        <section class="pay">
+          <div class="pbar">
+            <div class="meta">Change</div>
+            <div class="remain" id="remain">$?</div>
+          </div>
+          <div class="gridCoins" id="coins"></div>
+        </section>
+
+        <!-- HISTORY -->
         <section class="footer">
           <div class="meta">History</div>
           <div class="list" id="history"></div>
         </section>
       </div>
 
-      <!-- ROUND OVERLAY -->
+      <!-- OVERLAY -->
       <div class="overlay" id="overlay">
         <div class="box">
           <div class="title">Next passenger in</div>
@@ -231,7 +230,7 @@ body{
 /* Anti-zoom iOS */
 (function(){let t=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-t<350){e.preventDefault()}t=n},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false})})();
 
-/* Fit-to-screen (centrowanie + skala) */
+/* Fit-to-screen */
 (function(){
   const stage=document.getElementById('stage');
   function fit(){
@@ -247,7 +246,7 @@ body{
 })();
 
 /* ===== GAME ===== */
-const ticketTypes=[
+const ALL_TICKETS=[
   {name:"Normal", price:1.2, cls:"t-normal"},
   {name:"Kid", price:0.5, cls:"t-kid"},
   {name:"Luggage", price:0.6, cls:"t-luggage"},
@@ -257,81 +256,113 @@ const ticketTypes=[
   {name:"Bike", price:0.9, cls:"t-bike"},
   {name:"Tourist", price:1.5, cls:"t-tourist"}
 ];
-const coins=[5,2,1,0.5,0.25,0.1,0.05,0.01];
+
+const COINS=[5,2,1,0.5,0.25,0.1,0.05,0.01];
 
 const $=id=>document.getElementById(id);
-const timerDisplay=$("timer"), scoreDisplay=$("score"), roundDisplay=$("round"),
-  historyList=$("history"), needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"),
-  pickedEl=$("picked"), remainEl=$("remain"), overlay=$("overlay"), overlayCount=$("overlayCount"),
+const timerDisplay=$("timer"), scoreDisplay=$("score"), historyList=$("history"),
+  needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"), pickedEl=$("picked"),
+  remainEl=$("remain"), overlay=$("overlay"), overlayCount=$("overlayCount"),
   ticketsWrap=$("tickets"), coinsWrap=$("coins");
 
-const TOTAL_ROUNDS=5; let currentRound=0, score=0, timerId=null, overlayId=null;
+const TOTAL_ROUNDS=5;
+let currentRound=0, score=0, timerId=null, overlayId=null;
 
 const state={
-  request:{}, ticketTotal:0, pays:0,
+  available:[],       // 🔸 bilety dostępne w tym autobusie
+  request:{},         // 🔸 potrzeby pasażera z puli available
+  ticketTotal:0, pays:0,
   selectedTickets:{}, coinsUsed:{}, inserted:0,
   timeLeft:20, history:[],
-  showChange:false   // 🔸 Reszta pokazuje się dopiero po pierwszej monecie
+  showChange:false
 };
 
-const rndReq=()=>{const out={}, uniq=Math.floor(Math.random()*2)+1, pool=[...ticketTypes];
-  for(let i=0;i<uniq;i++){const pick=Math.floor(Math.random()*Math.min(3+currentRound,pool.length));
-    const [t]=pool.splice(pick,1); const cnt=Math.floor(Math.random()*3)+1; out[t.name]=cnt;}
-  return out};
-const calcFare=req=>Object.entries(req).reduce((s,[n,c])=>{const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0)},0);
+/* Losowanie “autobusu”: zawsze Normal + Kid + 0..4 innych (w sumie 2..6) */
+function rollBusConfig(){
+  const minTotal=2, maxTotal=6;
+  const others=ALL_TICKETS.filter(t=>t.name!=="Normal" && t.name!=="Kid");
+  const howMany = Math.floor(Math.random()*(maxTotal-minTotal+1))+minTotal;
+  const shuffled = others.sort(()=>Math.random()-0.5);
+  const picked = [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
+  return picked;
+}
+
+/* Potrzeby pasażera tylko z dostępnych typów */
+function rollRequest(available){
+  const pool=[...available];
+  // co najmniej 1 typ poza Normal/Kid (o ile dostępny)
+  const uniq = Math.min(pool.length, Math.floor(Math.random()*2)+1); // 1-2 typy
+  const out={};
+  for(let i=0;i<uniq;i++){
+    const pick=Math.floor(Math.random()*pool.length);
+    const t=pool.splice(pick,1)[0];
+    const cnt=Math.floor(Math.random()*3)+1; // 1-3
+    out[t.name]=cnt;
+  }
+  return out;
+}
+
+const fareOf=req=>Object.entries(req).reduce((s,[n,c])=>{
+  const t=ALL_TICKETS.find(x=>x.name===n); return s+(t?t.price*c:0)
+},0);
 const uniqCoins=()=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
 
 function renderTickets(){
-  ticketsWrap.innerHTML = ticketTypes.map(t=>{
-    const count=state.selectedTickets[t.name]||0, need=state.request[t.name]||0, dis=need>0 && count>=need;
-    return `<button class="btn tile ${t.cls}" ${dis?'disabled':''}
+  ticketsWrap.innerHTML = state.available.map(t=>{
+    const count=state.selectedTickets[t.name]||0, need=state.request[t.name]||0, dis=(need>0 && count>=need);
+    return `<button class="btn ${t.cls}" ${dis?'disabled':''}
               onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
               ${count?`<span class="bubble">×${count}</span>`:''}
               <div class="sub">${t.name}</div>
               <div>$${t.price.toFixed(2)}</div>
-            </button>`
+            </button>`;
   }).join("");
 }
 function renderCoins(){
-  coinsWrap.innerHTML = coins.map(v=>`
-    <button class="btn coin" onclick="insertCoin(${v})">
-      <div class="sub">Coin</div>
+  // pierwszy kafel to banknot $5 (prostokątny), reszta okrągłe monety
+  coinsWrap.innerHTML = COINS.map((v,i)=>`
+    <button class="btn ${i===0?'bill':'coin'}" onclick="insertCoin(${v})">
+      <div class="sub">${i===0?'Bill':'Coin'}</div>
       <div>$${v.toFixed(2)}</div>
     </button>
   `).join("");
 }
 
 function updateHud(){
-  $("score").textContent=score;
-  $("round").textContent=`${Math.min(currentRound,TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+  scoreDisplay.textContent=score;
   needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
   paysEl.textContent = `$${state.pays.toFixed(2)}`;
   fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
 
-  const selectedValue=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
-    const t=ticketTypes.find(x=>x.name===n); return s+(t?t.price*c:0);
+  const selected=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
+    const t=ALL_TICKETS.find(x=>x.name===n); return s+(t?t.price*c:0)
   },0);
-  pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
+  pickedEl.textContent = `$${selected.toFixed(2)}`;
 
   const changeDue=+(state.pays-state.ticketTotal).toFixed(2);
   const remaining=+(changeDue-state.inserted).toFixed(2);
   remainEl.textContent = state.showChange ? `$${Math.max(remaining,0).toFixed(2)}` : '$?';
 
-  historyList.innerHTML = state.history.map(({round:r,success,reason,bonuses})=>
+  historyList.innerHTML = state.history.map(({round:r,success,reason,bonuses}) =>
     `<div class="item"><span><strong>Round ${r}</strong> ${success?'✅':'❌'} ${reason}</span>${bonuses?.length?`<span class="badge">${bonuses.join(' • ')}</span>`:''}</div>`
   ).join("");
 }
 
+/* RUNDA */
 function startRound(){
   currentRound+=1; if(currentRound> TOTAL_ROUNDS){summary(); return;}
-  Object.assign(state,{request:rndReq(), selectedTickets:{}, coinsUsed:{}, inserted:0, timeLeft:20, showChange:false});
-  state.ticketTotal=+calcFare(state.request).toFixed(2);
+  state.available = rollBusConfig();
+  state.request = rollRequest(state.available);
+  state.selectedTickets={}; state.coinsUsed={}; state.inserted=0; state.timeLeft=20; state.showChange=false;
+
+  state.ticketTotal = +fareOf(state.request).toFixed(2);
   const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
-  state.pays=+(state.ticketTotal+extra).toFixed(2);
+  state.pays = +(state.ticketTotal+extra).toFixed(2);
+
   renderTickets(); renderCoins(); updateHud(); startTimer();
 }
 function startTimer(){ stopTimer(); timerDisplay.textContent=`${state.timeLeft} s`;
-  timerId=setInterval(()=>{state.timeLeft--; if(state.timeLeft<=0){timerDisplay.textContent='0 s'; stopTimer(); finish(false,{reason:"Time up"});return}
+  timerId=setInterval(()=>{state.timeLeft--; if(state.timeLeft<=0){timerDisplay.textContent='0 s'; stopTimer(); done(false,{reason:"Time up"});return}
   timerDisplay.textContent=`${state.timeLeft} s`},1000)}
 function stopTimer(){ if(timerId){clearInterval(timerId); timerId=null} }
 
@@ -342,7 +373,7 @@ function showOverlay(sec=5){
 }
 function hideOverlay(){ clearInterval(overlayId); overlayId=null; overlay.classList.remove('show'); startRound(); }
 
-function finish(ok,{reason="",bonuses=[]}={}){
+function done(ok,{reason="",bonuses=[]}={}){
   stopTimer();
   const tB=state.timeLeft>5?"Time bonus":null, mB=uniqCoins()<3&&state.inserted>0?"Change bonus":null;
   if(tB)bonuses.push(tB); if(mB)bonuses.push(mB);
@@ -350,49 +381,43 @@ function finish(ok,{reason="",bonuses=[]}={}){
   state.history.unshift({round:currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses});
   state.history=state.history.slice(0,7);
   updateHud();
-  // 🔸 wyraźna zmiana: overlay z odliczaniem
-  showOverlay(5);
-}
-function summary(){
-  state.history.unshift({round:"—", success:true, reason:`Shift end. Score: ${score}`, bonuses:[]});
-  updateHud();
+  showOverlay(5); // wyraźny ekran przejścia
 }
 
-/* Actions */
+/* AKCJE */
 window.addTicket=function(n){
   const req=state.request[n]||0, cur=state.selectedTickets[n]||0;
-  if(cur>=req && req>0) return;
-  state.selectedTickets[n]=cur+1; renderTickets(); updateHud(); auto();
+  if(req>0 && cur>=req) return;
+  state.selectedTickets[n]=cur+1; renderTickets(); updateHud(); maybeFinish();
 }
 window.removeTicket=function(n){
   const cur=state.selectedTickets[n]||0; if(cur<=0) return;
   state.selectedTickets[n]=cur-1; if(state.selectedTickets[n]<=0) delete state.selectedTickets[n];
-  renderTickets(); updateHud(); auto();
+  renderTickets(); updateHud(); maybeFinish();
 }
 window.insertCoin=function(v){
   const changeDue=+(state.pays-state.ticketTotal).toFixed(2);
   const next=+(state.inserted+v).toFixed(2);
-  if(next-changeDue>0.001){ finish(false,{reason:"Too much change"}); return; }
+  if(next-changeDue>0.001){ done(false,{reason:"Too much change"}); return; }
   state.inserted=next;
   state.coinsUsed[v]=(state.coinsUsed[v]||0)+1;
-  if(!state.showChange) state.showChange=true;  // 🔸 dopiero teraz odsłaniamy “resztę”
-  updateHud(); auto();
+  if(!state.showChange) state.showChange=true;   // reszta odsłania się dopiero teraz
+  updateHud(); maybeFinish();
 }
 
-/* CLEAR: usuń wszystkie wybrane bilety */
-$("clearTickets").addEventListener('click',()=>{
+$("clearTickets").addEventListener('click', ()=>{
   state.selectedTickets={}; renderTickets(); updateHud();
 });
 
-function auto(){
+function maybeFinish(){
   const changeDue=+(state.pays-state.ticketTotal).toFixed(2);
   const okMoney=Math.abs(state.inserted-changeDue)<=0.001;
   const okTickets=Object.entries(state.request).every(([n,c])=>(state.selectedTickets[n]||0)===c)
      && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
-  if(okMoney && okTickets){ finish(true,{reason:"OK"}) }
+  if(okMoney && okTickets){ done(true,{reason:"OK"}) }
 }
 
-/* Start */
+/* START */
 updateHud(); startRound();
 </script>
 </body>
