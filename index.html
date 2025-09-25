@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Rush – Bus Simulator PRO</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --primary: #38bdf8;
+      --success: #4ade80;
+      --danger: #f87171;
+      --warning: #facc15;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.25), transparent 55%),
+        radial-gradient(circle at bottom, rgba(74, 222, 128, 0.18), transparent 45%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    main {
+      width: min(960px, 100%);
+      background: color-mix(in srgb, var(--card) 85%, transparent);
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: 32px clamp(16px, 4vw, 40px);
+      box-shadow: 0 32px 60px rgba(15, 23, 42, 0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      margin: 0;
+      letter-spacing: 0.04em;
+    }
+
+    .timer {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--warning);
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 18px;
+      padding: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      display: grid;
+      gap: 16px;
+    }
+
+    .request {
+      display: grid;
+      gap: 8px;
+      font-size: 1.05rem;
+    }
+
+    .request strong {
+      font-size: 1.3rem;
+    }
+
+    .tickets,
+    .coins {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tickets {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .coins {
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      display: grid;
+      gap: 6px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.35);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .ticket-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.9;
+    }
+
+    .ticket-count {
+      font-size: 1.4rem;
+    }
+
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1rem;
+    }
+
+    .status > div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status strong {
+      font-size: 1.2rem;
+    }
+
+    .highlight {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+    }
+
+    .summary {
+      text-align: center;
+      display: grid;
+      gap: 16px;
+    }
+
+    .summary h2 {
+      font-size: clamp(2rem, 5vw, 2.6rem);
+      margin: 0;
+    }
+
+    .history {
+      display: grid;
+      gap: 8px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.95rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .tag {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+      font-size: 0.82rem;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .feedback {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 700;
+      text-align: center;
+      padding: 32px 12px;
+    }
+
+    .feedback.success {
+      color: var(--success);
+    }
+
+    .feedback.fail {
+      color: var(--danger);
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .spacer {
+      height: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>🚌 Ticket Rush</h1>
+      <div class="timer" id="timer">20 s</div>
+    </header>
+    <section class="panel" id="game"></section>
+    <section class="panel">
+      <div class="status">
+        <div><span class="meta">Punkty</span><strong id="score">0</strong></div>
+        <div><span class="meta">Sprzedaże</span><strong id="round">0 / 5</strong></div>
+        <div><span class="meta">Historia</span>
+          <ul class="history" id="history"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const ticketTypes = [
+      { name: "Normal", price: 1.2, color: "linear-gradient(135deg, #4ade80, #16a34a)" },
+      { name: "Kid", price: 0.5, color: "linear-gradient(135deg, #38bdf8, #2563eb)" },
+      { name: "Luggage", price: 0.6, color: "linear-gradient(135deg, #f97316, #c2410c)" },
+      { name: "Senior", price: 0.8, color: "linear-gradient(135deg, #a855f7, #7c3aed)" },
+      { name: "Disabled", price: 0.6, color: "linear-gradient(135deg, #ec4899, #db2777)" },
+      { name: "Baby Stroller", price: 0.7, color: "linear-gradient(135deg, #14b8a6, #0f766e)" },
+      { name: "Bike", price: 0.9, color: "linear-gradient(135deg, #84cc16, #4d7c0f)" },
+      { name: "Tourist", price: 1.5, color: "linear-gradient(135deg, #f87171, #dc2626)" }
+    ];
+
+    const coins = [5, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.01];
+
+    const gamePanel = document.getElementById("game");
+    const timerDisplay = document.getElementById("timer");
+    const scoreDisplay = document.getElementById("score");
+    const roundDisplay = document.getElementById("round");
+    const historyList = document.getElementById("history");
+
+    const TOTAL_ROUNDS = 5;
+    let currentRound = 0;
+    let score = 0;
+    let timerId = null;
+
+    const state = {
+      request: {},
+      ticketTotal: 0,
+      pays: 0,
+      selectedTickets: {},
+      coinsUsed: {},
+      inserted: 0,
+      owedVisible: false,
+      timeLeft: 20,
+      history: []
+    };
+
+    function randomRequest() {
+      const result = {};
+      const uniqueTypes = Math.floor(Math.random() * 2) + 1; // 1-2 typy
+      const available = [...ticketTypes];
+      for (let i = 0; i < uniqueTypes; i++) {
+        const pickIndex = Math.floor(Math.random() * Math.min(3 + currentRound, available.length));
+        const [ticket] = available.splice(pickIndex, 1);
+        const count = Math.floor(Math.random() * 3) + 1; // 1-3 szt.
+        result[ticket.name] = count;
+      }
+      return result;
+    }
+
+    function calculateFare(request) {
+      return Object.entries(request).reduce((total, [name, count]) => {
+        const type = ticketTypes.find((t) => t.name === name);
+        return total + type.price * count;
+      }, 0);
+    }
+
+    function startRound() {
+      currentRound += 1;
+      if (currentRound > TOTAL_ROUNDS) {
+        showSummary();
+        return;
+      }
+      Object.assign(state, {
+        request: randomRequest(),
+        ticketTotal: 0,
+        pays: 0,
+        selectedTickets: {},
+        coinsUsed: {},
+        inserted: 0,
+        owedVisible: false,
+        timeLeft: 20
+      });
+
+      const fare = calculateFare(state.request);
+      state.ticketTotal = +fare.toFixed(2);
+
+      const extra = [0.5, 1, 1.5, 2, 2.5][Math.floor(Math.random() * 5)];
+      state.pays = +(fare + extra).toFixed(2);
+
+      updateHud();
+      renderBoard();
+      startTimer();
+    }
+
+    function startTimer() {
+      stopTimer();
+      timerDisplay.textContent = `${state.timeLeft} s`;
+      timerId = setInterval(() => {
+        state.timeLeft -= 1;
+        if (state.timeLeft <= 0) {
+          timerDisplay.textContent = `0 s`;
+          stopTimer();
+          finishRound(false, { reason: "Upłynął czas" });
+          return;
+        }
+        timerDisplay.textContent = `${state.timeLeft} s`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function finishRound(success, { reason = "", bonuses = [] } = {}) {
+      stopTimer();
+      const timeBonus = state.timeLeft > 5 ? "⏱️ Premia za czas" : null;
+      const mixBonus = uniqueCoinsUsed() < 3 && state.inserted > 0 ? "🎯 Premia za resztę" : null;
+      const appliedBonuses = bonuses.filter(Boolean);
+      if (timeBonus) appliedBonuses.push(timeBonus);
+      if (mixBonus) appliedBonuses.push(mixBonus);
+
+      if (success) {
+        score += 10 + appliedBonuses.length * 5;
+      } else {
+        score = Math.max(0, score - 5);
+      }
+
+      const summary = {
+        round: currentRound,
+        success,
+        reason: reason || (success ? "Sprzedaż ukończona" : "Błąd w sprzedaży"),
+        bonuses: appliedBonuses
+      };
+      state.history.unshift(summary);
+      state.history = state.history.slice(0, 6);
+
+      renderFeedback(summary);
+
+      if (currentRound >= TOTAL_ROUNDS) {
+        setTimeout(showSummary, 1800);
+      } else {
+        setTimeout(countdownToNext, 1800);
+      }
+    }
+
+    function uniqueCoinsUsed() {
+      return Object.keys(state.coinsUsed).filter((key) => state.coinsUsed[key] > 0).length;
+    }
+
+    function renderFeedback(summary) {
+      gamePanel.innerHTML = `
+        <div class="feedback ${summary.success ? "success" : "fail"}">
+          ${summary.success ? "🟢" : "🔴"} ${summary.reason}
+          <div class="spacer"></div>
+          ${summary.bonuses.map((b) => `<span class="tag">${b}</span>`).join(" ")}
+        </div>
+      `;
+      updateHud();
+    }
+
+    function countdownToNext() {
+      let remaining = 5;
+      gamePanel.innerHTML = `<div class="feedback">Kolejny pasażer za ${remaining}…</div>`;
+      const interval = setInterval(() => {
+        remaining -= 1;
+        if (remaining < 0) {
+          clearInterval(interval);
+          startRound();
+          return;
+        }
+        gamePanel.innerHTML = `<div class="feedback">Kolejny pasażer za ${remaining}…</div>`;
+      }, 1000);
+    }
+
+    function showSummary() {
+      gamePanel.innerHTML = `
+        <div class="summary">
+          <h2>🎉 Koniec zmiany!</h2>
+          <p class="highlight">Łączny wynik: ${score}</p>
+          <p>Świetna robota! Możesz odświeżyć stronę, aby spróbować ponownie.</p>
+        </div>
+      `;
+      updateHud();
+    }
+
+    function addTicket(name) {
+      state.selectedTickets[name] = (state.selectedTickets[name] || 0) + 1;
+      renderBoard();
+      maybeCompleteSale();
+    }
+
+    function removeTicket(name) {
+      if (!state.selectedTickets[name]) return;
+      state.selectedTickets[name] -= 1;
+      if (state.selectedTickets[name] <= 0) {
+        delete state.selectedTickets[name];
+      }
+      renderBoard();
+      maybeCompleteSale();
+    }
+
+    function insertCoin(value) {
+      const newTotal = +(state.inserted + value).toFixed(2);
+      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
+
+      if (newTotal - changeDue > 0.001) {
+        finishRound(false, { reason: "Wydano za dużo reszty" });
+        return;
+      }
+
+      state.inserted = newTotal;
+      state.owedVisible = true;
+      state.coinsUsed[value] = (state.coinsUsed[value] || 0) + 1;
+
+      renderBoard();
+
+      if (Math.abs(state.inserted - changeDue) <= 0.001 && checkTickets()) {
+        finishRound(true, { reason: "Sprzedaż poprawna" });
+      }
+    }
+
+    function maybeCompleteSale() {
+      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
+      if (checkTickets() && Math.abs(state.inserted - changeDue) <= 0.001) {
+        finishRound(true, { reason: "Sprzedaż poprawna" });
+      }
+    }
+
+    function checkTickets() {
+      const requestEntries = Object.entries(state.request);
+      if (requestEntries.length !== Object.keys(state.selectedTickets).length) {
+        return false;
+      }
+      return requestEntries.every(([name, count]) => state.selectedTickets[name] === count);
+    }
+
+    function updateHud() {
+      scoreDisplay.textContent = score;
+      roundDisplay.textContent = `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+      historyList.innerHTML = state.history
+        .map(
+          ({ round: r, success, reason, bonuses }) => `
+            <li>
+              <strong>Runda ${r}:</strong> ${success ? "✅" : "❌"} ${reason}
+              ${bonuses.length ? `<div>${bonuses.map((b) => `<span class="tag">${b}</span>`).join(" ")}</div>` : ""}
+            </li>
+          `
+        )
+        .join("");
+    }
+
+    function renderBoard() {
+      const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
+      const remaining = +(changeDue - state.inserted).toFixed(2);
+      const selectedValue = Object.entries(state.selectedTickets).reduce((total, [name, count]) => {
+        const type = ticketTypes.find((t) => t.name === name);
+        return total + (type ? type.price * count : 0);
+      }, 0);
+      const ticketStatus = Object.entries(state.selectedTickets)
+        .map(([name, count]) => `${count}× ${name}`)
+        .join(", ");
+
+      gamePanel.innerHTML = `
+        <div class="request">
+          <div><span class="meta">Pasażer potrzebuje</span><strong>${Object.entries(state.request)
+            .map(([name, count]) => `${count}× ${name}`)
+            .join(", ")}</strong></div>
+          <div><span class="meta">Do zapłaty</span><span class="highlight">$${state.pays.toFixed(2)}</span></div>
+          <div><span class="meta">Wartość biletów</span><strong>$${state.ticketTotal.toFixed(2)}</strong></div>
+          <div><span class="meta">Wartość wybranych</span><strong>$${selectedValue.toFixed(2)}</strong></div>
+          <div><span class="meta">Twój wybór</span><strong>${ticketStatus || "–"}</strong></div>
+        </div>
+        <div class="tickets">
+          ${ticketTypes
+            .map((ticket) => {
+              const count = state.selectedTickets[ticket.name] || 0;
+              const requested = state.request[ticket.name] || 0;
+              const disabled = count >= requested && requested > 0;
+              return `
+                <button
+                  style="background:${ticket.color}"
+                  ${disabled && requested ? "disabled" : ""}
+                  onclick="addTicket('${ticket.name}')"
+                  oncontextmenu="event.preventDefault(); removeTicket('${ticket.name}');"
+                >
+                  <span class="ticket-label">${ticket.name}</span>
+                  <span>${ticket.price.toFixed(2)} $</span>
+                  <span class="ticket-count">${count} / ${requested || 0}</span>
+                  <small class="meta">Lewy klik +1 • Prawy klik -1</small>
+                </button>
+              `;
+            })
+            .join("")}
+        </div>
+        <div class="coins">
+          ${coins
+            .map(
+              (value) => `
+                <button style="background: linear-gradient(135deg, #facc15, #f59e0b)" onclick="insertCoin(${value})">
+                  <span class="ticket-label">Moneta</span>
+                  <span class="ticket-count">$${value.toFixed(2)}</span>
+                  <small class="meta">Reszta: ${state.coinsUsed[value] || 0}</small>
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+        <div class="status">
+          <div><span class="meta">Wydano reszty</span><strong>$${state.inserted.toFixed(2)}</strong></div>
+          <div><span class="meta">Do wydania</span><strong>${state.owedVisible || changeDue === 0 ? `$${Math.max(remaining, 0).toFixed(2)}` : "?"}</strong></div>
+          <div><span class="meta">Zmiennych nominałów</span><strong>${uniqueCoinsUsed()}</strong></div>
+        </div>
+      `;
+    }
+
+    // Start gry
+    updateHud();
+    countdownToNext();
+  </script>
+</body>
+</html>
