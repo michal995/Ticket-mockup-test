@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Ticket Rush — Test UI Lab</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0b1018; --panel:#0e1522; --panel2:#0a111c; --border:#223047;
+  --text:#f3f7ff; --muted:#9fb0c9; --accent:#ffd54a;
+  --ok:#35d08a; --bad:#ff5555;
+  --coin:#ffd54a; --coinText:#1a2232; --bill1:#d6f0c9; --bill2:#b8e3aa;
+
+  --baseH: 980px;  /* zwiększ jeśli chcesz większe kafle */
+  --safe: 10px;
+
+  --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --gap:18px; --pad:20px;
+
+  --h1:44px; --h2:30px; --meta:17px;
+  --tile:26px; --chip:18px;
+}
+
+*{box-sizing:border-box}
+html{height:100dvh; -webkit-text-size-adjust:100%}
+body{
+  margin:0; height:100dvh; overflow:hidden; touch-action:manipulation;
+  font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 650px at 15% -10%, rgba(255,213,74,.12), transparent 60%),
+    linear-gradient(#0a0f17,#0b1018);
+  padding:
+    calc(env(safe-area-inset-top) + var(--safe))
+    calc(env(safe-area-inset-right) + var(--safe))
+    calc(env(safe-area-inset-bottom) + var(--safe))
+    calc(env(safe-area-inset-left) + var(--safe));
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* viewport stage */
+#viewport{position:fixed; inset:0; overflow:hidden}
+#stage{
+  position:absolute; top:50%; left:50%;
+  width:calc(var(--baseH) * (16/9)); height:var(--baseH);
+  transform:translate(-50%,-50%) scale(var(--fit,1));
+  transform-origin:center;
+  filter: drop-shadow(0 22px 50px rgba(0,0,0,.44));
+}
+
+/* screens */
+.screen{display:none; width:100%; height:100%;}
+.screen.active{display:block}
+
+/* app card */
+.app{
+  width:100%; height:100%;
+  display:grid; gap:var(--gap);
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding: calc(var(--gap) + 6px);
+}
+
+/* header */
+.header{display:grid; grid-template-columns: 1fr auto auto; gap:var(--gap); align-items:center}
+.brand{display:flex; align-items:center; gap:14px; font-weight:900; font-size:var(--h1)}
+.badge{background:var(--accent); color:#0c0f14; border-radius:999px; padding:6px 14px; font-weight:900}
+.timer{font-weight:900; font-size:var(--h2); background:var(--accent); color:#0c0f14; padding:10px 16px; border-radius:14px}
+
+/* cards / HUD */
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--pad); display:grid; gap:8px;}
+.meta{color:var(--muted); font-size:var(--meta); letter-spacing:.08em; text-transform:uppercase}
+.big{font-size:var(--h2); font-weight:900}
+
+/* grids */
+.hud{display:grid; gap:var(--gap)}
+.tickets, .pay, .footer{background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--pad);}
+.tbar, .pbar{display:flex; align-items:center; justify-content:space-between}
+
+.gridTickets{display:grid; gap:var(--gap)}
+.gridCoins{display:grid; gap:var(--gap)}
+
+/* ticket btn */
+.btn{
+  position:relative; display:grid; place-items:center; text-align:center; cursor:pointer; user-select:none;
+  height:100%; border:0; border-radius:20px; color:#fff; padding:14px;
+  font-weight:900; font-size:var(--tile); line-height:1.1;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.20), 0 12px 26px rgba(0,0,0,.32);
+  transition:transform .06s ease, filter .12s ease, opacity .2s ease;
+}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn:disabled{opacity:.42; cursor:not-allowed}
+.sub{font-size:20px; font-weight:800; opacity:.97}
+.bubble{
+  position:absolute; top:10px; right:10px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.35);
+  padding:4px 10px; border-radius:999px; font-size:var(--chip); font-weight:900
+}
+
+/* ticket colors */
+.t-normal  {background:linear-gradient(140deg,#22c07a,#139a61)}
+.t-kid     {background:linear-gradient(140deg,#4aa7ff,#2c7cff)}
+.t-luggage {background:linear-gradient(140deg,#ff9650,#ff7828)}
+.t-senior  {background:linear-gradient(140deg,#b995ff,#8a6eff)}
+.t-disabled{background:linear-gradient(140deg,#ff6e9e,#e34a82)}
+.t-stroller{background:linear-gradient(140deg,#42dede,#23bbbb)}
+.t-bike    {background:linear-gradient(140deg,#a2e65a,#82cf35)}
+.t-tourist {background:linear-gradient(140deg,#ff7167,#ff5348)}
+.t-inactive{background:linear-gradient(140deg,#687587,#4f5a6a) !important; opacity:.6 !important; pointer-events:none}
+
+/* coins */
+.coin{
+  border-radius:999px; color:var(--coinText);
+  background:radial-gradient(circle at 30% 25%, #fff5b5 0%, var(--coin) 55%, #f0c63d 100%);
+  border:3px solid #e8bf39;
+}
+.bill{
+  border-radius:16px; color:#10311d;
+  background:linear-gradient(180deg,var(--bill1),var(--bill2));
+  border:3px solid #9fce8c;
+}
+.remain{font-weight:900; font-size:var(--h2); padding:10px 14px; border-radius:14px; background:#0f1828; border:1px solid var(--border); min-width:150px; text-align:center}
+
+/* lists */
+.list{display:grid; gap:12px; grid-auto-rows:minmax(48px,auto); overflow:auto}
+.item{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px; background:#0b1220; border:1px solid var(--border)}
+.badge{font-weight:900; padding:6px 10px; border-radius:999px; border:1px solid #2a3346; color:#d9e3f3}
+
+/* overlay */
+.overlay{position:absolute; inset:0; display:none; place-items:center; background:rgba(8,12,20,.70); backdrop-filter: blur(6px); z-index:20}
+.overlay.show{display:grid}
+.box{background:#0b1220; border:1px solid var(--border); border-radius:20px; padding:28px 32px; text-align:center; width:min(92vw, 800px)}
+.title{font-size:38px; font-weight:900; margin-bottom:10px}
+.count{font-size:32px; font-weight:900; color:var(--accent)}
+.small{color:var(--muted); font-size:18px}
+.points{font-size:34px; font-weight:900; margin:10px 0}
+.good{color:var(--ok)} .bad{color:var(--bad)}
+.summary-list{display:grid; gap:10px; margin-top:14px; max-height:52vh; overflow:auto; text-align:left}
+.s-item{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px; background:#0b1220; border:1px solid var(--border)}
+.btn-cta{margin-top:18px; padding:12px 18px; border-radius:12px; border:1px solid var(--border); background:#0f1828; color:#fff; font-weight:900; cursor:pointer}
+
+/* ======= HOME / SCORES / CMS ======= */
+.home, .scores, .cms{display:grid; gap:16px; align-content:start; height:100%}
+.home .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+select, input[type=text]{background:#0f1828; border:1px solid var(--border); color:#fff; padding:10px 12px; border-radius:10px; font-size:16px}
+button.primary{background:var(--accent); color:#0c0f14; border:0; padding:12px 16px; border-radius:12px; font-weight:900; cursor:pointer}
+.tabs{display:flex; gap:8px; flex-wrap:wrap}
+.tab{background:#0f1828; border:1px solid var(--border); color:#fff; padding:8px 12px; border-radius:10px; cursor:pointer}
+.tab.active{background:var(--accent); color:#0c0f14; border:0; font-weight:900}
+
+/* LAYOUT PRESETS per mode */
+.layout-TB .app{grid-template-rows: 84px 120px 1fr 200px 150px}      /* Top/Bottom: Header, HUD, Tickets, Pay, History */
+.layout-TB .hud{grid-template-columns: 2fr 1fr 1fr 1fr}
+.layout-TB .gridTickets{grid-template-columns:repeat(3,1fr); grid-auto-rows:minmax(120px,1fr)}
+.layout-TB .gridCoins{grid-template-columns:repeat(5,1fr); grid-auto-rows:minmax(110px,1fr)}
+
+.layout-HR .app{grid-template-rows: 84px 120px 1fr 150px 150px}      /* Horizontal: przerzucimy sekcje obok siebie via CSS Grid areas */
+.layout-HR .app{display:grid; grid-template-columns: 1.2fr 0.8fr; grid-template-areas:
+    "header header"
+    "hud hud"
+    "tickets pay"
+    "tickets footer"
+    "tickets footer";
+}
+.layout-HR .header{grid-area:header}
+.layout-HR .hud{grid-area:hud}
+.layout-HR .tickets{grid-area:tickets}
+.layout-HR .pay{grid-area:pay}
+.layout-HR .footer{grid-area:footer}
+.layout-HR .gridTickets{grid-template-columns:repeat(2,1fr); grid-auto-rows:minmax(140px,1fr)}
+.layout-HR .gridCoins{grid-template-columns:repeat(3,1fr); grid-auto-rows:minmax(120px,1fr)}
+</style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="stage">
+      <!-- ===== HOME ===== -->
+      <div class="screen active" id="screenHome">
+        <div class="app home">
+          <div class="header">
+            <div class="brand">🚌 Ticket Rush <span class="badge">LAB</span></div>
+            <div class="card"><div class="meta">Panel</div><div class="big">Home</div></div>
+            <button class="tab" id="goScores">Scores</button>
+          </div>
+
+          <div class="card">
+            <div class="meta">Player</div>
+            <div class="row">
+              <input type="text" id="playerName" placeholder="Your name / nick" />
+              <button class="primary" id="savePlayer">Save</button>
+            </div>
+            <div class="small" id="playerInfo"></div>
+          </div>
+
+          <div class="card">
+            <div class="meta">Mode</div>
+            <div class="row">
+              <select id="modeSelect">
+                <option value="TB1">Top/Bottom 1</option>
+                <option value="TB2">Top/Bottom 2 (grey inactive)</option>
+                <option value="HR1">Horizontal 1</option>
+                <option value="HR2">Horizontal 2 (grey inactive)</option>
+              </select>
+              <label>
+                <input type="checkbox" id="endlessToggle" />
+                Endless (stop on first mistake)
+              </label>
+              <button class="primary" id="startGame">Start</button>
+              <button class="tab" id="goCMS">CMS</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="meta">Tip</div>
+            <div>Tryb 2 pokazuje <b>wszystkie bilety</b>, ale niedostępne są szare i nieklikalne – do testów czytelności.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== GAME ===== -->
+      <div class="screen" id="screenGame">
+        <div class="app" id="appRoot">
+          <!-- HEADER -->
+          <div class="header">
+            <div class="brand">🚌 Ticket Rush <span class="badge" id="modeBadge"></span></div>
+            <div class="card"><div class="meta">Player</div><div class="big" id="playerNameLive">—</div></div>
+            <div class="timer" id="timer">20 s</div>
+          </div>
+
+          <!-- HUD -->
+          <div class="hud">
+            <div class="card"><div class="meta">Passenger needs</div><div class="big" id="need">—</div></div>
+            <div class="card"><div class="meta">To pay</div><div class="big" id="pays">$0.00</div></div>
+            <div class="card"><div class="meta">Tickets value</div><div class="big" id="fare">$0.00</div></div>
+            <div class="card"><div class="meta">Selected value</div><div class="big" id="picked">$0.00</div></div>
+          </div>
+
+          <!-- TICKETS -->
+          <section class="tickets">
+            <div class="tbar">
+              <div class="meta">Tickets</div>
+              <div style="display:flex; gap:8px; align-items:center">
+                <button class="tab" id="btnHome">Quit</button>
+                <button class="tab" id="btnRestart">Restart</button>
+                <button class="tab" id="clearTickets">Clear</button>
+              </div>
+            </div>
+            <div class="gridTickets" id="tickets"></div>
+          </section>
+
+          <!-- PAYMENT -->
+          <section class="pay">
+            <div class="pbar">
+              <div class="meta">Change</div>
+              <div class="remain" id="remain">$?</div>
+            </div>
+            <div class="gridCoins" id="coins"></div>
+          </section>
+
+          <!-- HISTORY -->
+          <section class="footer">
+            <div class="meta">History</div>
+            <div class="list" id="history"></div>
+          </section>
+        </div>
+
+        <!-- OVERLAY -->
+        <div class="overlay" id="overlay">
+          <div class="box" id="overlayBox"></div>
+        </div>
+      </div>
+
+      <!-- ===== SCORES ===== -->
+      <div class="screen" id="screenScores">
+        <div class="app scores">
+          <div class="header">
+            <div class="brand">🏆 High Scores</div>
+            <div class="card"><div class="meta">Tryby</div><div class="big">TB1 / TB2 / HR1 / HR2</div></div>
+            <button class="tab" id="backHome1">Home</button>
+          </div>
+
+          <div class="tabs" id="scoreTabs"></div>
+          <div class="card">
+            <div class="meta" id="scoreTitle">Top/Bottom 1</div>
+            <div class="list" id="scoreList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CMS ===== -->
+      <div class="screen" id="screenCMS">
+        <div class="app cms">
+          <div class="header">
+            <div class="brand">📊 CMS</div>
+            <div class="card"><div class="meta">Analiza</div><div class="big">Users & Modes</div></div>
+            <button class="tab" id="backHome2">Home</button>
+          </div>
+
+          <div class="card" id="cmsSummary">
+            <div class="meta">Users</div>
+            <div class="list" id="cmsUsers"></div>
+          </div>
+          <div class="card" id="cmsInsight">
+            <div class="meta">Który tryb „łatwiejszy”?</div>
+            <div id="easierModeText">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* Anti-zoom iOS */
+(function(){let t=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-t<350){e.preventDefault()}t=n},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false})})();
+
+/* Fit-to-screen */
+(function(){
+  const stage=document.getElementById('stage');
+  function fit(){
+    const vv=window.visualViewport||{width:innerWidth,height:innerHeight};
+    const vw=vv.width, vh=vv.height, baseH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--baseH'));
+    const baseW=baseH*(vw/vh);
+    stage.style.width=baseW+'px'; stage.style.height=baseH+'px';
+    const scale=Math.min(vw/baseW, vh/baseH);
+    stage.style.setProperty('--fit', scale);
+  }
+  addEventListener('resize',fit); addEventListener('orientationchange',()=>setTimeout(fit,60));
+  document.fonts?.ready.then(fit); new ResizeObserver(fit).observe(document.getElementById('viewport')); fit();
+})();
+
+/* ====== ROUTING ====== */
+const screens = {
+  home: document.getElementById('screenHome'),
+  game: document.getElementById('screenGame'),
+  scores: document.getElementById('screenScores'),
+  cms: document.getElementById('screenCMS'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* ====== STORAGE (localStorage DB) ======
+ keys:
+  - tr_user:{name}
+  - tr_users: ["nick1","nick2",...]
+  - tr_scores:{ TB1:{nick:best,...}, TB2:{...}, HR1:{...}, HR2:{...} }
+  - tr_stats:{ nick:{ plays:{TB1:n,TB2:n,...,HR2:n}, best:{TB1:x,...}, endlessBest:{TB1:y,...} } }
+*/
+const DB = {
+  getUser(){ return localStorage.getItem('tr_user') || '' },
+  setUser(name){
+    localStorage.setItem('tr_user', name);
+    const list = JSON.parse(localStorage.getItem('tr_users')||'[]');
+    if(!list.includes(name)){ list.push(name); localStorage.setItem('tr_users', JSON.stringify(list)); }
+  },
+  getScores(){
+    const empty = {TB1:{},TB2:{},HR1:{},HR2:{}};
+    return JSON.parse(localStorage.getItem('tr_scores')||JSON.stringify(empty));
+  },
+  saveScore(mode, name, score){
+    const scores = DB.getScores();
+    const best = Math.max(score, scores[mode][name]||0);
+    scores[mode][name]=best;
+    localStorage.setItem('tr_scores', JSON.stringify(scores));
+  },
+  getStats(){
+    return JSON.parse(localStorage.getItem('tr_stats')||'{}');
+  },
+  incPlay(mode, name){
+    const stats = DB.getStats();
+    stats[name] = stats[name] || {plays:{TB1:0,TB2:0,HR1:0,HR2:0}, best:{TB1:0,TB2:0,HR1:0,HR2:0}, endlessBest:{TB1:0,TB2:0,HR1:0,HR2:0}};
+    stats[name].plays[mode] = (stats[name].plays[mode]||0)+1;
+    localStorage.setItem('tr_stats', JSON.stringify(stats));
+  },
+  setBest(mode, name, score, endless){
+    const stats = DB.getStats();
+    stats[name] = stats[name] || {plays:{TB1:0,TB2:0,HR1:0,HR2:0}, best:{TB1:0,TB2:0,HR1:0,HR2:0}, endlessBest:{TB1:0,TB2:0,HR1:0,HR2:0}};
+    if(endless){
+      stats[name].endlessBest[mode] = Math.max(stats[name].endlessBest[mode]||0, score);
+    }else{
+      stats[name].best[mode] = Math.max(stats[name].best[mode]||0, score);
+    }
+    localStorage.setItem('tr_stats', JSON.stringify(stats));
+  }
+};
+
+/* ====== UI HOME / SCORES / CMS ====== */
+const playerNameInput = document.getElementById('playerName');
+const playerInfo = document.getElementById('playerInfo');
+const savePlayerBtn = document.getElementById('savePlayer');
+const modeSelect = document.getElementById('modeSelect');
+const endlessToggle = document.getElementById('endlessToggle');
+
+document.getElementById('goScores').onclick=()=>{ loadScoresUI('TB1'); showScreen('scores') };
+document.getElementById('goCMS').onclick=()=>{ loadCMS(); showScreen('cms') };
+document.getElementById('backHome1').onclick=()=>showScreen('home');
+document.getElementById('backHome2').onclick=()=>showScreen('home');
+
+savePlayerBtn.onclick=()=>{
+  const n = playerNameInput.value.trim();
+  if(!n){ playerInfo.textContent='Wpisz nick.'; return; }
+  DB.setUser(n);
+  playerInfo.textContent = `Zapisano. Witaj, ${n}!`;
+};
+
+document.getElementById('startGame').onclick=()=>{
+  const n = playerNameInput.value.trim() || DB.getUser();
+  if(!n){ playerInfo.textContent='Podaj nick aby grać.'; return; }
+  DB.setUser(n);
+  startSession(n, modeSelect.value, endlessToggle.checked);
+  showScreen('game');
+};
+
+/* scores tabs */
+const scoreTabs = document.getElementById('scoreTabs');
+const scoreList = document.getElementById('scoreList');
+const scoreTitle = document.getElementById('scoreTitle');
+['TB1','TB2','HR1','HR2'].forEach(m=>{
+  const b=document.createElement('button');
+  b.className='tab'; b.textContent=m;
+  b.onclick=()=>loadScoresUI(m);
+  scoreTabs.appendChild(b);
+});
+function loadScoresUI(mode){
+  scoreTitle.textContent = modeLabel(mode);
+  Array.from(scoreTabs.children).forEach(ch=>{
+    ch.classList.toggle('active', ch.textContent===mode);
+  });
+  const scores = DB.getScores()[mode] || {};
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,30);
+  scoreList.innerHTML = sorted.map(([nick,pts],i)=>`
+    <div class="item">
+      <span><strong>#${i+1}</strong> ${nick}</span>
+      <span class="badge">${pts}</span>
+    </div>
+  `).join('') || '<div class="item"><span>Brak wyników</span></div>';
+}
+
+/* CMS */
+function loadCMS(){
+  const users = JSON.parse(localStorage.getItem('tr_users')||'[]');
+  const stats = DB.getStats();
+  const wrap = document.getElementById('cmsUsers');
+  wrap.innerHTML = users.map(n=>{
+    const s = stats[n] || {plays:{TB1:0,TB2:0,HR1:0,HR2:0}, best:{TB1:0,TB2:0,HR1:0,HR2:0}, endlessBest:{TB1:0,TB2:0,HR1:0,HR2:0}};
+    return `
+      <div class="item">
+        <span><strong>${n}</strong> — plays TB1:${s.plays.TB1} TB2:${s.plays.TB2} HR1:${s.plays.HR1} HR2:${s.plays.HR2}</span>
+        <span class="badge">best: TB1 ${s.best.TB1} / TB2 ${s.best.TB2} / HR1 ${s.best.HR1} / HR2 ${s.best.HR2} | endless: TB1 ${s.endlessBest.TB1} / TB2 ${s.endlessBest.TB2} / HR1 ${s.endlessBest.HR1} / HR2 ${s.endlessBest.HR2}</span>
+      </div>
+    `;
+  }).join('') || '<div class="item"><span>Brak użytkowników</span></div>';
+
+  // prosta „łatwość” = średnia najlepszych wyników (im wyższa, tym łatwiej)
+  const scores = DB.getScores();
+  const avg = {};
+  ['TB1','TB2','HR1','HR2'].forEach(m=>{
+    const vals = Object.values(scores[m]||{});
+    avg[m] = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+  });
+  const bestMode = Object.entries(avg).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('easierModeText').textContent =
+    bestMode ? `Najłatwiejszy (na podstawie średniego best score): ${modeLabel(bestMode[0])} — ${bestMode[1]} pkt` : '—';
+}
+
+/* ====== GAME CORE (Twoja mechanika + parametry trybu) ====== */
+const ALL_TICKETS=[
+  {name:"Normal", price:1.2, cls:"t-normal"},
+  {name:"Kid", price:0.5, cls:"t-kid"},
+  {name:"Luggage", price:0.6, cls:"t-luggage"},
+  {name:"Senior", price:0.8, cls:"t-senior"},
+  {name:"Disabled", price:0.6, cls:"t-disabled"},
+  {name:"Baby Stroller", price:0.7, cls:"t-stroller"},
+  {name:"Bike", price:0.9, cls:"t-bike"},
+  {name:"Tourist", price:1.5, cls:"t-tourist"}
+];
+const COINS=[5,2,1,0.5,0.25,0.1,0.05,0.01];
+
+const $=id=>document.getElementById(id);
+const timerDisplay=$("timer"), historyList=$("history"),
+  needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"), pickedEl=$("picked"),
+  remainEl=$("remain"), overlay=$("overlay"), overlayBox=$("overlayBox"),
+  ticketsWrap=$("tickets"), coinsWrap=$("coins"), appRoot=$("appRoot"),
+  playerNameLive=$("playerNameLive"), modeBadge=$("modeBadge");
+
+let SESSION = null; // aktualna sesja
+
+function modeLabel(mode){
+  return ({
+    TB1:'Top/Bottom 1',
+    TB2:'Top/Bottom 2 (grey inactive)',
+    HR1:'Horizontal 1',
+    HR2:'Horizontal 2 (grey inactive)'
+  })[mode] || mode;
+}
+function isTopBottom(mode){ return mode.startsWith('TB') }
+function isVariant2(mode){ return mode.endsWith('2') }
+
+function startSession(player, mode, endless){
+  SESSION = {
+    player, mode, endless,
+    TOTAL_ROUNDS: endless ? Infinity : 5,
+    currentRound:0, score:0, timerId:null, overlayId:null,
+    roundSummaries:[],
+    state:{
+      available:[], request:{}, ticketTotal:0, pays:0,
+      selectedTickets:{}, coinsUsed:{}, inserted:0,
+      timeLeft:20, history:[], showChange:false
+    }
+  };
+  // layout preset
+  appRoot.classList.toggle('layout-TB', isTopBottom(mode));
+  appRoot.classList.toggle('layout-HR', !isTopBottom(mode));
+  playerNameLive.textContent = player;
+  modeBadge.textContent = modeLabel(mode);
+  DB.incPlay(mode, player);
+  renderCoins();
+  updateHud();
+  startRound();
+  // nawigacja
+  document.getElementById('btnHome').onclick=()=>{ endSession(false); showScreen('home') };
+  document.getElementById('btnRestart').onclick=()=>{ endSession(false); startSession(player, mode, endless) };
+  document.getElementById('clearTickets').onclick=()=>{ SESSION.state.selectedTickets={}; renderTickets(); updateHud(); };
+}
+function endSession(save=true){
+  if(!SESSION) return;
+  clearInterval(SESSION.timerId); SESSION.timerId=null;
+  if(save && !SESSION.endless){
+    DB.saveScore(SESSION.mode, SESSION.player, SESSION.score);
+    DB.setBest(SESSION.mode, SESSION.player, SESSION.score, false);
+  }
+  if(save && SESSION.endless){
+    DB.saveScore(SESSION.mode, SESSION.player, SESSION.score); // też licz do ogólnego best
+    DB.setBest(SESSION.mode, SESSION.player, SESSION.score, true);
+  }
+  SESSION=null;
+}
+
+/* runda / losowania */
+function rollBusConfig(){
+  const minTotal=2, maxTotal=6;
+  const others=ALL_TICKETS.filter(t=>t.name!=="Normal" && t.name!=="Kid");
+  const howMany = Math.floor(Math.random()*(maxTotal-minTotal+1))+minTotal;
+  const shuffled = others.sort(()=>Math.random()-0.5);
+  return [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
+}
+function rollRequest(available){
+  const pool=[...available];
+  const uniq = Math.min(pool.length, Math.floor(Math.random()*2)+1); // 1–2 typy
+  const out={};
+  for(let i=0;i<uniq;i++){
+    const pick=Math.floor(Math.random()*pool.length);
+    const t=pool.splice(pick,1)[0];
+    const cnt=Math.floor(Math.random()*3)+1;
+    out[t.name]=cnt;
+  }
+  return out;
+}
+const fareOf=req=>Object.entries(req).reduce((s,[n,c])=>{
+  const t=ALL_TICKETS.find(x=>x.name===n); return s+(t?t.price*c:0)
+},0);
+const uniqCoins=state=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
+
+/* render */
+function renderTickets(){
+  const S=SESSION.state, mode=SESSION.mode;
+  const variant2 = isVariant2(mode);
+  // w TB2/HR2: pokazujemy wszystkie typy, ale te spoza available są szare i nieklikalne
+  const showPool = variant2 ? ALL_TICKETS : S.available;
+
+  ticketsWrap.innerHTML = showPool.map(t=>{
+    const isAvailable = !!S.available.find(a=>a.name===t.name);
+    const disabledBecauseNotAvailable = variant2 && !isAvailable;
+    const count=S.selectedTickets[t.name]||0, need=S.request[t.name]||0;
+    const capReached = need>0 && count>=need;
+    const disabled = disabledBecauseNotAvailable || capReached;
+    const cls = [t.cls, disabledBecauseNotAvailable?'t-inactive':''].join(' ');
+    return `
+      <button class="btn ${cls}" ${disabled?'disabled':''}
+        onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
+        ${count?`<span class="bubble">×${count}</span>`:''}
+        <div class="sub">${t.name}</div>
+        <div>$${t.price.toFixed(2)}</div>
+      </button>`;
+  }).join("");
+}
+function renderCoins(){
+  if(!Array.isArray(COINS) || !coinsWrap) return;
+  coinsWrap.innerHTML = COINS.map((v,i)=>`
+    <button class="btn ${i===0?'bill':'coin'}" onclick="insertCoin(${v})">
+      <div class="sub">${i===0?'Bill':'Coin'}</div>
+      <div>$${v.toFixed(2)}</div>
+    </button>
+  `).join("");
+}
+function updateHud(){
+  const S=SESSION.state;
+  // hud
+  const needTxt = Object.entries(S.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+  needEl.textContent = needTxt || "—";
+  paysEl.textContent  = `$${S.pays.toFixed(2)}`;
+  fareEl.textContent  = `$${S.ticketTotal.toFixed(2)}`;
+
+  const selectedValue = Object.entries(S.selectedTickets).reduce((sum, [n, c]) => {
+    const t = ALL_TICKETS.find(x => x.name === n);
+    return sum + (t ? t.price * c : 0);
+  }, 0);
+  pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
+
+  const changeDue = +(S.pays - S.ticketTotal).toFixed(2);
+  const remaining = +(changeDue - S.inserted).toFixed(2);
+  remainEl.textContent = S.showChange ? `$${Math.max(remaining, 0).toFixed(2)}` : "$?";
+
+  document.getElementById('score').textContent = String(SESSION.score);
+
+  // historia
+  historyList.innerHTML = (S.history || [])
+    .map(({ round, success, reason, bonuses, delta }) => {
+      const tags = (bonuses && bonuses.length)
+        ? `<span class="badge">${bonuses.join(" • ")}</span>`
+        : "";
+      return `
+        <div class="item">
+          <span><strong>Round ${round}</strong> ${success ? "✅" : "❌"} ${reason || ""}</span>
+          <span class="${success?'good':'bad'}" style="font-weight:900">${delta>0?`+${delta}`:delta||''}</span>
+          ${tags}
+        </div>
+      `;
+    })
+    .join("");
+}
+
+/* overlay helpers */
+function setOverlay(html){ overlayBox.innerHTML=html; overlay.classList.add('show'); }
+function hideOverlay(){ overlay.classList.remove('show'); }
+
+/* timer */
+function startTimer(){ stopTimer(); const S=SESSION.state;
+  timerDisplay.textContent=`${S.timeLeft} s`;
+  SESSION.timerId=setInterval(()=>{S.timeLeft--; if(S.timeLeft<=0){timerDisplay.textContent='0 s'; stopTimer(); finish(false,{reason:"Time up"});return}
+  timerDisplay.textContent=`${S.timeLeft} s`},1000)}
+function stopTimer(){ if(SESSION && SESSION.timerId){clearInterval(SESSION.timerId); SESSION.timerId=null} }
+
+/* round */
+function startRound(){
+  const S=SESSION.state, M=SESSION.mode;
+  SESSION.currentRound += 1;
+  if(SESSION.currentRound > SESSION.TOTAL_ROUNDS){ endGame(); return; }
+
+  S.available = rollBusConfig();
+  S.request = rollRequest(S.available);
+  S.selectedTickets={}; S.coinsUsed={}; S.inserted=0; S.timeLeft=20; S.showChange=false;
+
+  S.ticketTotal = +fareOf(S.request).toFixed(2);
+  const extra=[0.5,1,1.5,2,2.5][Math.floor(Math.random()*5)];
+  S.pays = +(S.ticketTotal+extra).toFixed(2);
+
+  renderTickets(); updateHud(); startTimer();
+}
+
+/* end game screens */
+function endGame(){
+  // Endless może się zakończyć błędem; normal po osiągnięciu TOTAL_ROUNDS
+  showEndSummary();
+  endSession(true);
+}
+function showEndSummary(){
+  const items = SESSION.roundSummaries.map(r=>{
+    const cls=r.success?'good':'bad';
+    const delta = r.delta>0?`+${r.delta}`:r.delta;
+    const need = Object.entries(r.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+    return `<div class="s-item">
+      <span><strong class="${cls}">${r.success?'✅':'❌'}</strong> Round ${r.round} — ${need}</span>
+      <span class="${cls}" style="font-weight:900">${delta||''}</span>
+    </div>`;
+  }).join("");
+  setOverlay(`
+    <div class="title">Shift complete</div>
+    <div class="small">Final score</div>
+    <div class="points">${SESSION.score}</div>
+    <div class="summary-list">${items}</div>
+    <button class="btn-cta" onclick="playAgain()">Play again</button>
+  `);
+}
+
+/* quick feedback + countdown */
+function showQuickFeedback(ok, delta, reason){
+  const cls = ok?'good':'bad';
+  setOverlay(`
+    <div class="title ${cls}">${ok?'✅ OK':'❌ Error'}</div>
+    <div class="points ${cls}">${delta>0?`+${delta}`:delta||''}</div>
+    <div class="small">${reason || (ok?'Sale complete':'Issue with sale')}</div>
+  `);
+  setTimeout(()=>{ showCountdown(5); }, 1200);
+}
+function showCountdown(sec){
+  let left=sec;
+  setOverlay(`<div class="title">Next passenger in</div><div class="count" id="countNum">${left}</div>`);
+  SESSION.overlayId=setInterval(()=>{
+    left--; const el=document.getElementById('countNum'); if(el) el.textContent=left;
+    if(left<=0){ clearInterval(SESSION.overlayId); SESSION.overlayId=null; hideOverlay(); startRound(); }
+  },1000);
+}
+
+/* finish round */
+function finish(ok,{reason="",bonuses=[]}={}){
+  const S=SESSION.state;
+  stopTimer();
+  const tB=S.timeLeft>5?"Time bonus":null, mB=uniqCoins(S)<3&&S.inserted>0?"Change bonus":null;
+  if(tB)bonuses.push(tB); if(mB)bonuses.push(mB);
+
+  const before = SESSION.score;
+  SESSION.score = ok ? SESSION.score + 10 + bonuses.length*5 : Math.max(0, SESSION.score-5);
+  const delta = SESSION.score - before;
+
+  const roundInfo = {round:SESSION.currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses:[...bonuses], delta, request:{...S.request}};
+  SESSION.roundSummaries.push(roundInfo);
+
+  S.history.unshift(roundInfo);
+  S.history=S.history.slice(0,7);
+  updateHud();
+
+  if(SESSION.endless && !ok){
+    // endless kończy się na błędzie
+    showEndSummary();
+    endSession(true);
+  }else if(!SESSION.endless && SESSION.currentRound>=SESSION.TOTAL_ROUNDS){
+    showQuickFeedback(ok, delta, roundInfo.reason);
+    setTimeout(()=>{ showEndSummary(); endSession(true); }, 1300);
+  }else{
+    showQuickFeedback(ok, delta, roundInfo.reason);
+  }
+}
+
+/* actions */
+window.addTicket=function(n){
+  const S=SESSION.state;
+  const req=S.request[n]||0, cur=S.selectedTickets[n]||0;
+  if(req>0 && cur>=req) return;
+  S.selectedTickets[n]=cur+1; renderTickets(); updateHud(); maybeComplete();
+}
+window.removeTicket=function(n){
+  const S=SESSION.state;
+  const cur=S.selectedTickets[n]||0; if(cur<=0) return;
+  S.selectedTickets[n]=cur-1; if(S.selectedTickets[n]<=0) delete S.selectedTickets[n];
+  renderTickets(); updateHud(); maybeComplete();
+}
+window.insertCoin=function(v){
+  const S=SESSION.state;
+  const changeDue=+(S.pays-S.ticketTotal).toFixed(2);
+  const next=+(S.inserted+v).toFixed(2);
+  if(next-changeDue>0.001){ finish(false,{reason:"Too much change"}); return; }
+  S.inserted=next;
+  S.coinsUsed[v]=(S.coinsUsed[v]||0)+1;
+  if(!S.showChange) S.showChange=true;
+  updateHud(); maybeComplete();
+}
+
+function maybeComplete(){
+  const S=SESSION.state;
+  const changeDue=+(S.pays-S.ticketTotal).toFixed(2);
+  const okMoney=Math.abs(S.inserted-changeDue)<=0.001;
+  const okTickets=Object.entries(S.request).every(([n,c])=>(S.selectedTickets[n]||0)===c)
+     && Object.keys(S.request).length===Object.keys(S.selectedTickets).length;
+  if(okMoney && okTickets){ finish(true,{reason:"OK"}) }
+}
+
+/* play again */
+window.playAgain=function(){
+  const p=SESSION?.player || DB.getUser();
+  const m=SESSION?.mode || 'TB1';
+  const e=SESSION?.endless || false;
+  endSession(false);
+  hideOverlay();
+  startSession(p,m,e);
+}
+
+/* HOME init */
+(function initHome(){
+  const saved = DB.getUser();
+  if(saved){ playerNameInput.value=saved; playerInfo.textContent=`Witaj ponownie, ${saved}!`; }
+})();
+
+/* SCORES init first view */
+loadScoresUI('TB1');
+</script>
+</body>
+</html>
