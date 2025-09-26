@@ -328,32 +328,60 @@ function renderTickets(){
             </button>`;
   }).join("");
 }
-function renderCoins(){
-  coinsWrap.innerHTML = COINS.map((v,i)=>`
-    <button class="btn ${i===0?'bill':'coin'}" onclick="insertCoin(${v})">
-      <div class="sub">${i===0?'Bill':'Coin'}</div>
-      <div>$${v.toFixed(2)}</div>
-    </button>
-  ).join("");
+function renderCoins() {
+  // bezpieczeństwo gdyby coś się nie zainicjalizowało
+  if (!Array.isArray(COINS) || !coinsWrap) return;
+
+  coinsWrap.innerHTML = COINS
+    .map((v, i) => {
+      return `
+        <button class="btn ${i === 0 ? 'bill' : 'coin'}" onclick="insertCoin(${v})">
+          <div class="sub">${i === 0 ? 'Bill' : 'Coin'}</div>
+          <div>$${v.toFixed(2)}</div>
+        </button>
+      `;
+    })
+    .join("");
 }
-function updateHud(){
-  scoreDisplay.textContent=score;
-  needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
-  paysEl.textContent = `$${state.pays.toFixed(2)}`;
-  fareEl.textContent = `$${state.ticketTotal.toFixed(2)}`;
 
-  const selected=Object.entries(state.selectedTickets).reduce((s,[n,c])=>{
-    const t=ALL_TICKETS.find(x=>x.name===n); return s+(t?t.price*c:0)
-  },0);
-  pickedEl.textContent = `$${selected.toFixed(2)}`;
+function updateHud() {
+  scoreDisplay.textContent = String(score);
 
-  const changeDue=+(state.pays-state.ticketTotal).toFixed(2);
-  const remaining=+(changeDue-state.inserted).toFixed(2);
-  remainEl.textContent = state.showChange ? `$${Math.max(remaining,0).toFixed(2)}` : '$?';
+  // potrzeby pasażera
+  const needTxt = Object.entries(state.request)
+    .map(([n, c]) => `${c}× ${n}`)
+    .join(", ");
+  needEl.textContent = needTxt || "—";
 
-  historyList.innerHTML = state.history.map(({round:r,success,reason,bonuses}) =>
-    `<div class="item"><span><strong>Round ${r}</strong> ${success?'✅':'❌'} ${reason}</span>${bonuses?.length?`<span class="badge">${bonuses.join(' • ')}</span>`:''}</div>`
-  ).join("");
+  // wartości
+  paysEl.textContent  = `$${state.pays.toFixed(2)}`;
+  fareEl.textContent  = `$${state.ticketTotal.toFixed(2)}`;
+
+  const selectedValue = Object.entries(state.selectedTickets).reduce((sum, [n, c]) => {
+    const t = ALL_TICKETS.find(x => x.name === n);
+    return sum + (t ? t.price * c : 0);
+  }, 0);
+  pickedEl.textContent = `$${selectedValue.toFixed(2)}`;
+
+  // reszta — pokazuj dopiero po pierwszej monecie
+  const changeDue = +(state.pays - state.ticketTotal).toFixed(2);
+  const remaining = +(changeDue - state.inserted).toFixed(2);
+  remainEl.textContent = state.showChange ? `$${Math.max(remaining, 0).toFixed(2)}` : "$?";
+
+  // historia
+  historyList.innerHTML = (state.history || [])
+    .map(({ round: r, success, reason, bonuses }) => {
+      const tags = (bonuses && bonuses.length)
+        ? `<span class="badge">${bonuses.join(" • ")}</span>`
+        : "";
+      return `
+        <div class="item">
+          <span><strong>Round ${r}</strong> ${success ? "✅" : "❌"} ${reason || ""}</span>
+          ${tags}
+        </div>
+      `;
+    })
+    .join("");
 }
 
 /* RUNDA */
