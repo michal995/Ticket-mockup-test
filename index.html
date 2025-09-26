@@ -17,7 +17,7 @@
   --coin:#ffd54a; --coinText:#1a2232; --bill1:#d6f0c9; --bill2:#b8e3aa;
 
   /* DUŻE UI */
-  --baseH: 980px;        /* podbij do 1020–1040, jeśli chcesz jeszcze większe elementy */
+  --baseH: 960px;          /* podbij do 1000–1040 jeśli chcesz jeszcze większe */
   --safe: 10px;
 
   --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px;
@@ -44,7 +44,7 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 
-/* STAGE: centrowanie + skala; wewnętrzny „pas bezpieczeństwa” */
+/* STAGE: centrowanie + skala; wewnętrzny “pas bezpieczeństwa” */
 #viewport{position:fixed; inset:0; overflow:hidden}
 #stage{
   position:absolute; top:50%; left:50%;
@@ -57,7 +57,7 @@ body{
 /* APLIKACJA — jedna karta, układ arcade */
 .app{
   width:100%; height:100%;
-  display:grid; grid-template-rows: 84px 120px 1fr 210px 150px;
+  display:grid; grid-template-rows: 84px 120px 1fr 200px 150px;
   gap:var(--gap);
   background:var(--panel2);
   border:1px solid var(--border);
@@ -87,46 +87,39 @@ body{
 }
 .tbar{display:flex; align-items:center; justify-content:space-between}
 .clear{border:1px solid var(--border); background:#0f1828; color:#eaf1ff; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer}
-
-/* GRID biletów – 3 szerokie kolumny */
 .gridTickets{
   display:grid; gap:var(--gap);
-  grid-template-columns:repeat(3,1fr);
-  grid-auto-rows:minmax(130px,1fr);
+  grid-template-columns:repeat(3,1fr);   /* 3 szerokie kolumny = duże kafle */
+  grid-auto-rows:minmax(120px,1fr);
 }
 
-/* ====== BILET (SVG) ====== */
-.ticket-btn{
-  position:relative; cursor:pointer; user-select:none; border:0; background:transparent; padding:0;
-  display:block; width:100%; height:100%;
-  /* cienki cień jak w kartach */
-  filter: drop-shadow(0 12px 26px rgba(0,0,0,.28));
-  transition: transform .06s ease, filter .12s ease, opacity .2s ease;
+/* Kafle biletów */
+.btn{
+  position:relative;
+  display:grid; place-items:center; text-align:center; cursor:pointer; user-select:none;
+  height:100%;
+  border:0; border-radius:20px; color:#fff; padding:14px;
+  font-weight:900; font-size:var(--tile); line-height:1.1;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,.20), 0 12px 26px rgba(0,0,0,.32);
+  transition:transform .06s ease, filter .12s ease, opacity .2s ease;
 }
-.ticket-btn:active{ transform: translateY(1px) scale(.99) }
-.ticket-svg{ width:100%; height:100%; display:block }
-.ticket-label,.ticket-price{
-  position:absolute; left:13%; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.25);
-  font-weight:900; pointer-events:none;
-}
-.ticket-label{ top:38%; font-size:clamp(15px,2.1vw,20px) }
-.ticket-price{ top:67%; font-size:clamp(16px,2.4vw,22px) }
-.badgeCount{
-  position:absolute; top:8px; right:10px; background:rgba(0,0,0,.35);
-  border:1px solid rgba(255,255,255,.35); border-radius:999px;
-  padding:4px 10px; font-size:var(--chip); font-weight:900; color:#fff; pointer-events:none;
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn:disabled{opacity:.42; cursor:not-allowed}
+.sub{font-size:20px; font-weight:800; opacity:.97}
+.bubble{
+  position:absolute; top:10px; right:10px; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.35);
+  padding:4px 10px; border-radius:999px; font-size:var(--chip); font-weight:900
 }
 
-/* Kolory (przez zmienne) */
-.ticket-btn{ --ticketText:#fff; }
-.t-normal  { --ticket:#22c07a; --ticket2:#139a61; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-kid     { --ticket:#4aa7ff; --ticket2:#2c7cff; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-senior  { --ticket:#b995ff; --ticket2:#8a6eff; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-luggage { --ticket:#ff9650; --ticket2:#ff7828; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-disabled{ --ticket:#ff6e9e; --ticket2:#e34a82; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-stroller{ --ticket:#42dede; --ticket2:#23bbbb; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-bike    { --ticket:#a2e65a; --ticket2:#82cf35; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
-.t-tourist { --ticket:#ff7167; --ticket2:#ff5348; --ticketAccent:#ffd54a; --ticketAccent2:#ffbe2e; }
+/* czytelne, nasycone kolory (bez cukru) */
+.t-normal  {background:linear-gradient(140deg,#22c07a,#139a61)}
+.t-kid     {background:linear-gradient(140deg,#4aa7ff,#2c7cff)}
+.t-luggage {background:linear-gradient(140deg,#ff9650,#ff7828)}
+.t-senior  {background:linear-gradient(140deg,#b995ff,#8a6eff)}
+.t-disabled{background:linear-gradient(140deg,#ff6e9e,#e34a82)}
+.t-stroller{background:linear-gradient(140deg,#42dede,#23bbbb)}
+.t-bike    {background:linear-gradient(140deg,#a2e65a,#82cf35)}
+.t-tourist {background:linear-gradient(140deg,#ff7167,#ff5348)}
 
 /* PAYMENT */
 .pay{
@@ -143,16 +136,7 @@ body{
   grid-template-columns:repeat(5,1fr); grid-auto-rows:minmax(110px,1fr);
 }
 
-/* monety i banknot – wyraźnie inne (zostawiamy z poprzedniej wersji) */
-.btn{
-  position:relative; display:grid; place-items:center; text-align:center; cursor:pointer; user-select:none;
-  height:100%; border:0; border-radius:20px; color:#fff; padding:14px;
-  font-weight:900; font-size:var(--tile); line-height:1.1;
-  box-shadow: inset 0 -2px 0 rgba(255,255,255,.20), 0 12px 26px rgba(0,0,0,.32);
-  transition:transform .06s ease, filter .12s ease, opacity .2s ease;
-}
-.btn:active{transform:translateY(1px) scale(.99)}
-.sub{font-size:20px; font-weight:800; opacity:.97}
+/* monety i banknot – wyraźnie inne */
 .coin{
   border-radius:999px; color:var(--coinText);
   background:radial-gradient(circle at 30% 25%, #fff5b5 0%, var(--coin) 55%, #f0c63d 100%);
@@ -285,26 +269,28 @@ const TOTAL_ROUNDS=5;
 let currentRound=0, score=0, timerId=null, overlayId=null;
 
 const state={
-  available:[],       // bilety dostępne w tej rundzie
-  request:{},         // potrzeby pasażera z puli available
+  available:[],       // 🔸 bilety dostępne w tym autobusie
+  request:{},         // 🔸 potrzeby pasażera z puli available
   ticketTotal:0, pays:0,
   selectedTickets:{}, coinsUsed:{}, inserted:0,
   timeLeft:20, history:[],
   showChange:false
 };
 
-/* Losowanie „autobusu”: zawsze Normal + Kid + 0..4 innych (w sumie 2..6) */
+/* Losowanie “autobusu”: zawsze Normal + Kid + 0..4 innych (w sumie 2..6) */
 function rollBusConfig(){
   const minTotal=2, maxTotal=6;
   const others=ALL_TICKETS.filter(t=>t.name!=="Normal" && t.name!=="Kid");
   const howMany = Math.floor(Math.random()*(maxTotal-minTotal+1))+minTotal;
   const shuffled = others.sort(()=>Math.random()-0.5);
-  return [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
+  const picked = [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
+  return picked;
 }
 
 /* Potrzeby pasażera tylko z dostępnych typów */
 function rollRequest(available){
   const pool=[...available];
+  // co najmniej 1 typ poza Normal/Kid (o ile dostępny)
   const uniq = Math.min(pool.length, Math.floor(Math.random()*2)+1); // 1-2 typy
   const out={};
   for(let i=0;i<uniq;i++){
@@ -321,23 +307,19 @@ const fareOf=req=>Object.entries(req).reduce((s,[n,c])=>{
 },0);
 const uniqCoins=()=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
 
-/* ===== RENDER ===== */
 function renderTickets(){
   ticketsWrap.innerHTML = state.available.map(t=>{
-    const count=state.selectedTickets[t.name]||0;
-    const need=state.request[t.name]||0;
-    const dis=(need>0 && count>=need); // blokuj po osiągnięciu wymaganego
-    return `
-      <button class="ticket-btn ${t.cls}" ${dis?'disabled':''}
+    const count=state.selectedTickets[t.name]||0, need=state.request[t.name]||0, dis=(need>0 && count>=need);
+    return `<button class="btn ${t.cls}" ${dis?'disabled':''}
               onclick="addTicket('${t.name}')" oncontextmenu="event.preventDefault(); removeTicket('${t.name}')">
-        ${count?`<span class="badgeCount">×${count}</span>`:''}
-        <svg class="ticket-svg" viewBox="0 0 240 120" aria-hidden="true"><use href="#ticket-card"></use></svg>
-        <span class="ticket-label">${t.name}</span>
-        <span class="ticket-price">$${t.price.toFixed(2)}</span>
-      </button>`;
+              ${count?`<span class="bubble">×${count}</span>`:''}
+              <div class="sub">${t.name}</div>
+              <div>$${t.price.toFixed(2)}</div>
+            </button>`;
   }).join("");
 }
 function renderCoins(){
+  // pierwszy kafel to banknot $5 (prostokątny), reszta okrągłe monety
   coinsWrap.innerHTML = COINS.map((v,i)=>`
     <button class="btn ${i===0?'bill':'coin'}" onclick="insertCoin(${v})">
       <div class="sub">${i===0?'Bill':'Coin'}</div>
@@ -345,6 +327,7 @@ function renderCoins(){
     </button>
   `).join("");
 }
+
 function updateHud(){
   scoreDisplay.textContent=score;
   needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
@@ -365,7 +348,7 @@ function updateHud(){
   ).join("");
 }
 
-/* ===== RUNDA ===== */
+/* RUNDA */
 function startRound(){
   currentRound+=1; if(currentRound> TOTAL_ROUNDS){summary(); return;}
   state.available = rollBusConfig();
@@ -390,12 +373,18 @@ function showOverlay(sec=5){
 }
 function hideOverlay(){ clearInterval(overlayId); overlayId=null; overlay.classList.remove('show'); startRound(); }
 
-function summary(){
-  state.history.unshift({round:'—',success:true,reason:`Koniec zmiany! Wynik: ${score}`,bonuses:[]});
-  updateHud(); showOverlay(5);
+function done(ok,{reason="",bonuses=[]}={}){
+  stopTimer();
+  const tB=state.timeLeft>5?"Time bonus":null, mB=uniqCoins()<3&&state.inserted>0?"Change bonus":null;
+  if(tB)bonuses.push(tB); if(mB)bonuses.push(mB);
+  score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
+  state.history.unshift({round:currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses});
+  state.history=state.history.slice(0,7);
+  updateHud();
+  showOverlay(5); // wyraźny ekran przejścia
 }
 
-/* ===== AKCJE ===== */
+/* AKCJE */
 window.addTicket=function(n){
   const req=state.request[n]||0, cur=state.selectedTickets[n]||0;
   if(req>0 && cur>=req) return;
@@ -412,7 +401,7 @@ window.insertCoin=function(v){
   if(next-changeDue>0.001){ done(false,{reason:"Too much change"}); return; }
   state.inserted=next;
   state.coinsUsed[v]=(state.coinsUsed[v]||0)+1;
-  if(!state.showChange) state.showChange=true;   // reszta odsłania się dopiero po pierwszej monecie
+  if(!state.showChange) state.showChange=true;   // reszta odsłania się dopiero teraz
   updateHud(); maybeFinish();
 }
 
@@ -427,75 +416,9 @@ function maybeFinish(){
      && Object.keys(state.request).length===Object.keys(state.selectedTickets).length;
   if(okMoney && okTickets){ done(true,{reason:"OK"}) }
 }
-function done(ok,{reason="",bonuses=[]}={}){
-  stopTimer();
-  const tB=state.timeLeft>5?"Time bonus":null, mB=uniqCoins()<3&&state.inserted>0?"Change bonus":null;
-  if(tB)bonuses.push(tB); if(mB)bonuses.push(mB);
-  score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
-  state.history.unshift({round:currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses});
-  state.history=state.history.slice(0,7);
-  updateHud();
-  showOverlay(5); // wyraźny ekran przejścia
-}
 
 /* START */
 updateHud(); startRound();
 </script>
-
-<!-- ================== SVG SPRITE: JEDEN UNIWERSALNY BILET ================== -->
-<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute; width:0; height:0; overflow:hidden">
-  <symbol id="ticket-card" viewBox="0 0 240 120" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="gFill" x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0"  stop-color="var(--ticket, #3aa0ff)" />
-        <stop offset="1"  stop-color="var(--ticket2, #2b78ff)" />
-      </linearGradient>
-      <linearGradient id="gAccent" x1="0" x2="1" y1="0" y2="0">
-        <stop offset="0"  stop-color="var(--ticketAccent, #ffd54a)" />
-        <stop offset="1"  stop-color="var(--ticketAccent2, #ffbe2e)" />
-      </linearGradient>
-      <filter id="softShadow" x="-20%" y="-30%" width="140%" height="160%">
-        <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".25"/>
-      </filter>
-    </defs>
-
-    <g filter="url(#softShadow)">
-      <!-- tło biletu z „wycięciami” po lewej -->
-      <path d="M20 6h164a8 8 0 0 1 8 8v16
-               a10 10 0 0 0 0 20v16a10 10 0 0 0 0 20v16a8 8 0 0 1-8 8H20
-               a8 8 0 0 1-8-8v-16a10 10 0 0 0 0-20V50a10 10 0 0 0 0-20V14
-               a8 8 0 0 1 8-8z"
-            fill="url(#gFill)" />
-
-      <!-- pasek kuponu -->
-      <rect x="184" y="6" width="36" height="108" rx="8" ry="8" fill="url(#gAccent)"/>
-      <path d="M180 10v100" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-dasharray="4 6" />
-
-      <!-- mikroperforacje -->
-      <g fill="rgba(255,255,255,.18)">
-        <circle cx="14" cy="30" r="2.1"/>
-        <circle cx="14" cy="60" r="2.1"/>
-        <circle cx="14" cy="90" r="2.1"/>
-      </g>
-
-      <!-- ozdobne sloty -->
-      <rect x="22" y="18" width="150" height="10" rx="5" fill="rgba(255,255,255,.18)"/>
-      <rect x="22" y="36" width="150" height="20" rx="6" fill="rgba(0,0,0,.18)"/>
-      <rect x="22" y="64" width="90" height="26" rx="8" fill="rgba(0,0,0,.22)"/>
-
-      <!-- pseudo-QR / ikonki -->
-      <g transform="translate(122,64)">
-        <rect x="0" y="0" width="46" height="26" rx="6" fill="rgba(255,255,255,.12)"/>
-        <rect x="6" y="6" width="6" height="6" fill="rgba(255,255,255,.85)"/>
-        <rect x="18" y="6" width="6" height="6" fill="rgba(255,255,255,.6)"/>
-        <rect x="30" y="6" width="6" height="6" fill="rgba(255,255,255,.35)"/>
-        <rect x="6" y="14" width="12" height="6" fill="rgba(255,255,255,.6)"/>
-        <rect x="22" y="14" width="14" height="6" fill="rgba(255,255,255,.85)"/>
-      </g>
-    </g>
-  </symbol>
-</svg>
-<!-- ======================================================================= -->
-
 </body>
 </html>
