@@ -17,7 +17,7 @@
   --coin:#ffd54a; --coinText:#1a2232; --bill1:#d6f0c9; --bill2:#b8e3aa;
 
   /* DUŻE UI */
-  --baseH: 960px;          /* podbij do 1000–1040 jeśli chcesz jeszcze większe */
+  --baseH: 960px;
   --safe: 10px;
 
   --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px;
@@ -44,7 +44,7 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 
-/* STAGE: centrowanie + skala; wewnętrzny “pas bezpieczeństwa” */
+/* STAGE: centrowanie + skala */
 #viewport{position:fixed; inset:0; overflow:hidden}
 #stage{
   position:absolute; top:50%; left:50%;
@@ -54,7 +54,7 @@ body{
   filter: drop-shadow(0 22px 50px rgba(0,0,0,.44));
 }
 
-/* APLIKACJA — jedna karta, układ arcade */
+/* APLIKACJA */
 .app{
   width:100%; height:100%;
   display:grid; grid-template-rows: 84px 120px 1fr 200px 150px;
@@ -80,7 +80,7 @@ body{
 .meta{color:var(--muted); font-size:var(--meta); letter-spacing:.08em; text-transform:uppercase}
 .big{font-size:var(--h2); font-weight:900}
 
-/* TICKETS area */
+/* TICKETS */
 .tickets{
   background:var(--panel); border:1px solid var(--border); border-radius:var(--r-lg); padding:var(--pad);
   display:grid; grid-template-rows: 46px 1fr; gap:var(--gap);
@@ -89,7 +89,7 @@ body{
 .clear{border:1px solid var(--border); background:#0f1828; color:#eaf1ff; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer}
 .gridTickets{
   display:grid; gap:var(--gap);
-  grid-template-columns:repeat(3,1fr);   /* 3 szerokie kolumny = duże kafle */
+  grid-template-columns:repeat(3,1fr);
   grid-auto-rows:minmax(120px,1fr);
 }
 
@@ -111,7 +111,7 @@ body{
   padding:4px 10px; border-radius:999px; font-size:var(--chip); font-weight:900
 }
 
-/* czytelne, nasycone kolory (bez cukru) */
+/* Kolory biletów */
 .t-normal  {background:linear-gradient(140deg,#22c07a,#139a61)}
 .t-kid     {background:linear-gradient(140deg,#4aa7ff,#2c7cff)}
 .t-luggage {background:linear-gradient(140deg,#ff9650,#ff7828)}
@@ -136,7 +136,7 @@ body{
   grid-template-columns:repeat(5,1fr); grid-auto-rows:minmax(110px,1fr);
 }
 
-/* monety i banknot – wyraźnie inne */
+/* monety i banknot */
 .coin{
   border-radius:999px; color:var(--coinText);
   background:radial-gradient(circle at 30% 25%, #fff5b5 0%, var(--coin) 55%, #f0c63d 100%);
@@ -158,15 +158,24 @@ body{
       background:#0b1220; border:1px solid var(--border)}
 .badge{font-weight:900; padding:6px 10px; border-radius:999px; border:1px solid #2a3346; color:#d9e3f3}
 
-/* OVERLAY */
+/* OVERLAY (feedback / odliczanie / podsumowanie) */
 .overlay{
   position:absolute; inset:0; display:none; place-items:center; background:rgba(8,12,20,.70);
   backdrop-filter: blur(6px); z-index:20;
 }
 .overlay.show{display:grid}
-.overlay .box{background:#0b1220; border:1px solid var(--border); border-radius:20px; padding:32px 38px; text-align:center}
-.overlay .title{font-size:38px; font-weight:900; margin-bottom:12px}
-.overlay .count{font-size:32px; font-weight:900; color:var(--accent)}
+.box{
+  background:#0b1220; border:1px solid var(--border); border-radius:20px; padding:28px 32px;
+  text-align:center; width:min(92vw, 800px);
+}
+.title{font-size:38px; font-weight:900; margin-bottom:10px}
+.count{font-size:32px; font-weight:900; color:var(--accent)}
+.small{color:var(--muted); font-size:18px}
+.points{font-size:34px; font-weight:900; margin:10px 0}
+.good{color:var(--ok)} .bad{color:var(--bad)}
+.summary-list{display:grid; gap:10px; margin-top:14px; max-height:52vh; overflow:auto; text-align:left}
+.s-item{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px; background:#0b1220; border:1px solid var(--border)}
+.btn-cta{margin-top:18px; padding:12px 18px; border-radius:12px; border:1px solid var(--border); background:#0f1828; color:#fff; font-weight:900; cursor:pointer}
 </style>
 </head>
 <body>
@@ -216,11 +225,10 @@ body{
         </section>
       </div>
 
-      <!-- OVERLAY -->
+      <!-- OVERLAY (dynamic) -->
       <div class="overlay" id="overlay">
-        <div class="box">
-          <div class="title">Next passenger in</div>
-          <div class="count" id="overlayCount">5</div>
+        <div class="box" id="overlayBox">
+          <!-- dynamic content -->
         </div>
       </div>
     </div>
@@ -262,41 +270,42 @@ const COINS=[5,2,1,0.5,0.25,0.1,0.05,0.01];
 const $=id=>document.getElementById(id);
 const timerDisplay=$("timer"), scoreDisplay=$("score"), historyList=$("history"),
   needEl=$("need"), paysEl=$("pays"), fareEl=$("fare"), pickedEl=$("picked"),
-  remainEl=$("remain"), overlay=$("overlay"), overlayCount=$("overlayCount"),
+  remainEl=$("remain"), overlay=$("overlay"), overlayBox=$("overlayBox"),
   ticketsWrap=$("tickets"), coinsWrap=$("coins");
 
 const TOTAL_ROUNDS=5;
 let currentRound=0, score=0, timerId=null, overlayId=null;
 
+/* zapamiętujemy rundy do końcowego podsumowania */
+const roundSummaries=[];
+
 const state={
-  available:[],       // 🔸 bilety dostępne w tym autobusie
-  request:{},         // 🔸 potrzeby pasażera z puli available
+  available:[],
+  request:{},
   ticketTotal:0, pays:0,
   selectedTickets:{}, coinsUsed:{}, inserted:0,
   timeLeft:20, history:[],
   showChange:false
 };
 
-/* Losowanie “autobusu”: zawsze Normal + Kid + 0..4 innych (w sumie 2..6) */
+/* Losowanie “autobusu” */
 function rollBusConfig(){
   const minTotal=2, maxTotal=6;
   const others=ALL_TICKETS.filter(t=>t.name!=="Normal" && t.name!=="Kid");
   const howMany = Math.floor(Math.random()*(maxTotal-minTotal+1))+minTotal;
   const shuffled = others.sort(()=>Math.random()-0.5);
-  const picked = [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
-  return picked;
+  return [ALL_TICKETS.find(t=>t.name==="Normal"), ALL_TICKETS.find(t=>t.name==="Kid"), ...shuffled.slice(0,Math.max(0,howMany-2))];
 }
 
-/* Potrzeby pasażera tylko z dostępnych typów */
+/* Potrzeby pasażera */
 function rollRequest(available){
   const pool=[...available];
-  // co najmniej 1 typ poza Normal/Kid (o ile dostępny)
-  const uniq = Math.min(pool.length, Math.floor(Math.random()*2)+1); // 1-2 typy
+  const uniq = Math.min(pool.length, Math.floor(Math.random()*2)+1); // 1–2 typy
   const out={};
   for(let i=0;i<uniq;i++){
     const pick=Math.floor(Math.random()*pool.length);
     const t=pool.splice(pick,1)[0];
-    const cnt=Math.floor(Math.random()*3)+1; // 1-3
+    const cnt=Math.floor(Math.random()*3)+1; // 1–3 szt.
     out[t.name]=cnt;
   }
   return out;
@@ -307,6 +316,7 @@ const fareOf=req=>Object.entries(req).reduce((s,[n,c])=>{
 },0);
 const uniqCoins=()=>Object.keys(state.coinsUsed).filter(k=>state.coinsUsed[k]>0).length;
 
+/* RENDER */
 function renderTickets(){
   ticketsWrap.innerHTML = state.available.map(t=>{
     const count=state.selectedTickets[t.name]||0, need=state.request[t.name]||0, dis=(need>0 && count>=need);
@@ -319,15 +329,13 @@ function renderTickets(){
   }).join("");
 }
 function renderCoins(){
-  // pierwszy kafel to banknot $5 (prostokątny), reszta okrągłe monety
   coinsWrap.innerHTML = COINS.map((v,i)=>`
     <button class="btn ${i===0?'bill':'coin'}" onclick="insertCoin(${v})">
       <div class="sub">${i===0?'Bill':'Coin'}</div>
       <div>$${v.toFixed(2)}</div>
     </button>
-  `).join("");
+  ).join("");
 }
-
 function updateHud(){
   scoreDisplay.textContent=score;
   needEl.textContent = Object.entries(state.request).map(([n,c])=>`${c}× ${n}`).join(", ");
@@ -350,7 +358,7 @@ function updateHud(){
 
 /* RUNDA */
 function startRound(){
-  currentRound+=1; if(currentRound> TOTAL_ROUNDS){summary(); return;}
+  currentRound+=1; if(currentRound> TOTAL_ROUNDS){showEndSummary(); return;}
   state.available = rollBusConfig();
   state.request = rollRequest(state.available);
   state.selectedTickets={}; state.coinsUsed={}; state.inserted=0; state.timeLeft=20; state.showChange=false;
@@ -366,22 +374,79 @@ function startTimer(){ stopTimer(); timerDisplay.textContent=`${state.timeLeft} 
   timerDisplay.textContent=`${state.timeLeft} s`},1000)}
 function stopTimer(){ if(timerId){clearInterval(timerId); timerId=null} }
 
-function showOverlay(sec=5){
-  overlay.classList.add('show'); overlayCount.textContent=sec;
-  let left=sec;
-  overlayId=setInterval(()=>{ left--; overlayCount.textContent=left; if(left<=0){hideOverlay()} },1000);
-}
-function hideOverlay(){ clearInterval(overlayId); overlayId=null; overlay.classList.remove('show'); startRound(); }
+/* OVERLAY UTILS */
+function setOverlay(html){ overlayBox.innerHTML=html; overlay.classList.add('show'); }
+function hideOverlay(){ overlay.classList.remove('show'); }
 
+/* Quick feedback (1.2 s), potem odliczanie */
+function showQuickFeedback(ok, delta, reason){
+  const cls = ok?'good':'bad';
+  setOverlay(`
+    <div class="title ${cls}">${ok?'✅ OK':'❌ Error'}</div>
+    <div class="points ${cls}">${delta>0?`+${delta}`:delta}</div>
+    <div class="small">${reason || (ok?'Sale complete':'Issue with sale')}</div>
+  `);
+  setTimeout(()=>{ showCountdown(5); }, 1200);
+}
+
+/* Odliczanie do kolejnego pasażera */
+function showCountdown(sec){
+  let left=sec;
+  setOverlay(`
+    <div class="title">Next passenger in</div>
+    <div class="count" id="countNum">${left}</div>
+  `);
+  overlayId=setInterval(()=>{
+    left--; const el=document.getElementById('countNum'); if(el) el.textContent=left;
+    if(left<=0){ clearInterval(overlayId); overlayId=null; hideOverlay(); startRound(); }
+  },1000);
+}
+
+/* Koniec gry: podsumowanie 5 rund + „Play again” */
+function showEndSummary(){
+  const items = roundSummaries.map(r=>{
+    const cls=r.success?'good':'bad';
+    const delta = r.pointsDelta>0?`+${r.pointsDelta}`:r.pointsDelta;
+    const need = Object.entries(r.request).map(([n,c])=>`${c}× ${n}`).join(", ");
+    return `<div class="s-item">
+      <span><strong class="${cls}">${r.success?'✅':'❌'}</strong> Round ${r.round} — ${need}</span>
+      <span class="${cls}" style="font-weight:900">${delta}</span>
+    </div>`;
+  }).join("");
+  setOverlay(`
+    <div class="title">Shift complete</div>
+    <div class="small">Final score</div>
+    <div class="points">${score}</div>
+    <div class="summary-list">${items}</div>
+    <button class="btn-cta" onclick="playAgain()">Play again</button>
+  `);
+}
+
+/* DONE */
 function done(ok,{reason="",bonuses=[]}={}){
   stopTimer();
   const tB=state.timeLeft>5?"Time bonus":null, mB=uniqCoins()<3&&state.inserted>0?"Change bonus":null;
   if(tB)bonuses.push(tB); if(mB)bonuses.push(mB);
+
+  const before = score;
   score = ok ? score + 10 + bonuses.length*5 : Math.max(0, score-5);
-  state.history.unshift({round:currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses});
+  const delta = score - before;
+
+  /* zapisz do historii i do podsumowania */
+  const roundInfo = {round:currentRound, success:ok, reason:reason||(ok?"OK":"Error"), bonuses:[...bonuses], pointsDelta:delta, request:{...state.request}};
+  roundSummaries.push(roundInfo);
+
+  state.history.unshift(roundInfo);
   state.history=state.history.slice(0,7);
   updateHud();
-  showOverlay(5); // wyraźny ekran przejścia
+
+  /* feedback -> countdown, a po 5 rundach summary */
+  if(currentRound>=TOTAL_ROUNDS){
+    showQuickFeedback(ok, delta, roundInfo.reason);
+    setTimeout(()=>{ showEndSummary(); }, 1300);
+  }else{
+    showQuickFeedback(ok, delta, roundInfo.reason);
+  }
 }
 
 /* AKCJE */
@@ -417,8 +482,15 @@ function maybeFinish(){
   if(okMoney && okTickets){ done(true,{reason:"OK"}) }
 }
 
+/* PLAY AGAIN */
+window.playAgain=function(){
+  // reset
+  currentRound=0; score=0; state.history=[]; roundSummaries.length=0;
+  hideOverlay(); updateHud(); startRound();
+}
+
 /* START */
-updateHud(); startRound();
+renderCoins(); updateHud(); startRound();
 </script>
 </body>
 </html>
